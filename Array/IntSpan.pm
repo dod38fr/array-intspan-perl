@@ -16,13 +16,17 @@
 # contact Toby Everett at teverett@alascom.att.com
 ##########################################################################
 
+# $Author$
+# $Date$
+# $Name$
+# $Revision$
+
+
 use strict;
 
 package Array::IntSpan;
 
-use vars qw($VERSION);
-
-$VERSION = '1.01';
+our $VERSION = sprintf "%d.%03d", q$Revision$ =~ /(\d+)\.(\d+)/;
 
 sub new {
   my $class = shift;
