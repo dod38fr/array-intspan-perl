@@ -29,8 +29,8 @@ package Array::IntSpan;
 
 our $VERSION = sprintf "%d.%03d", q$Revision$ =~ /(\d+)\.(\d+)/;
 
-sub min { my @a = sort(@_) ; return $a[0] ; }
-sub max { my @a = sort(@_) ; return $a[$#a] ; }
+sub min { my @a = sort {$a <=> $b} @_ ; return $a[0] ; }
+sub max { my @a = sort {$b <=> $a} @_ ; return $a[0] ; }
 
 sub new {
   my $class = shift;
@@ -90,26 +90,29 @@ sub check_clobber {
 sub get_range {
   my $self = shift;
   #my($new_elem) = [@_];
-  my ($start_elem,$end_elem,$filler) = @_ ;
+  my ($start_elem,$end_elem, $filler, $copy, $set) = @_ ;
+
+  $copy = sub{$_[0];} unless defined $copy ;
 
   my $end_range = $#{$self};
   my $range_size = @$self ; # nb of elements
 
-  # Before we binary search, first check if we fall outside the range
-  if ($end_range < 0 or
-      $self->[$end_range][1] < $start_elem 
-     )
+  # Before we binary search, first check if we fall before the range
+  if ($end_range < 0 or $self->[$end_range][1] < $start_elem)
     {
-      my @arg = ref($filler) ? ([$start_elem,$end_elem,&$filler]) :
-        defined $filler ? ([@_]) : () ;
+      my @arg = ref($filler) ? 
+        ([$start_elem,$end_elem,&$filler($start_elem,$end_elem)]) :
+          defined $filler ? ([@_]) : () ;
       push @$self, @arg if @arg;
       return ref($self)->new(@arg) ;
     }
 
+  # Before we binary search, first check if we fall after the range
   if ($end_elem < $self->[0][0]) 
     {
-      my @arg = ref($filler) ? ([$start_elem,$end_elem,&$filler]) :
-        defined $filler ? ([@_]) : () ;
+      my @arg = ref($filler) ? 
+        ([$start_elem,$end_elem,&$filler($start_elem,$end_elem)]) :
+          defined $filler ? ([@_]) : () ;
       unshift @$self, @arg  if @arg;
       return ref($self)->new(@arg) ;
     }
@@ -129,21 +132,15 @@ sub get_range {
   my @replaced ;
   my $length = 0;
 
-  # TBD. We may need to compute the length of the "covered" parts
-  # and do a splice with the "extracted" part. THis will clobber
-  # existing ranges with identical copies.
-
-  # compute a "replaced" array that does not split elements
-
   # handle the start
   if (defined $filler and $start_offset < 0)
     {
-      my $new = ref($filler) ? &$filler : $filler ;
       my $e = min ($end_elem, $self->[$start][0]-1) ;
-      # factorize and duplicate array ????
+      my $new = ref($filler) ? &$filler($start_elem, $e) : $filler ;
       my @a = ($start_elem, $e, $new) ;
       # don't use \@a, as we don't want @extracted and @replaced to
-      # point to the same memory area.
+      # point to the same memory area. But $new must point to the same
+      # object
       push @extracted, [ @a ] ;
       push @replaced,  [ @a ] ; 
     }
@@ -152,9 +149,23 @@ sub get_range {
     {
       my $s = max ($start_elem,$self->[$start][0]) ;
       my $e = min ($end_elem, $self->[$start][1]) ;
-      push @extracted, [$s, $e, $self->[$start][2]];
+      my $payload = $self->[$start][2] ;
+      if ($self->[$start][0] < $s)
+        {
+          my $s1 = $self->[$start][0];
+          my $e1 = $s - 1 ;
+          push @replaced, [$s1, $e1 , &$copy($payload,$s1,$e1) ];
+        }
       # must duplicate the start, end variable
-      push @replaced, [@{$self->[$start]}] ;
+      push @extracted, [$s, $e, $payload];
+      push @replaced, [$s, $e, $payload];
+      if ($e < $self->[$start][1])
+        {
+          my $s3 = $e+1 ;
+          my $e3 = $self->[$start][1] ;
+          push @replaced, [$s3, $e3, &$copy($payload, $s3,$e3) ] ;
+        }
+      &$set($payload,$s, $e) if defined $set ;
       $length ++ ;
     }
 
@@ -167,10 +178,15 @@ sub get_range {
           #print "idx $idx," ;
           if (defined $filler)
             {
-              my $new = ref($filler) ? &$filler : $filler ;
-              my @a = ($self->[$idx-1][1]+1, $self->[$idx][0]-1, $new ) ;
-              push @extracted, [@a] ;
-              push @replaced,  [@a];
+              my $start_fill = $self->[$idx-1][1]+1 ;
+              my $end_fill = $self->[$idx][0]-1 ;
+              if ($start_fill <= $end_fill)
+                {
+                  my $new = ref($filler) ? &$filler($start_fill, $end_fill)
+                    : $filler ;
+                  push @extracted, [$start_fill, $end_fill, $new] ;
+                  push @replaced,  [$start_fill, $end_fill, $new];
+                }
             }
           push @extracted, [@{$self->[$idx]}]; 
           push @replaced , [@{$self->[$idx]}]; 
@@ -185,26 +201,43 @@ sub get_range {
       if (defined $filler)
         {
           # must add end element filler
+          my $start_fill = $self->[$end-1][1]+1 ;
           my $end_fill = (not defined $end_offset or $end_offset < 0) ?
             $end_elem :  $self->[$end][0]-1 ;
-
-          my $new = ref($filler) ? &$filler : $filler ;
-          my @a = ($self->[$end-1][1]+1, $end_fill, $new) ;
-          push @extracted, [@a] ;
-          push @replaced, [@a];
+          if ($start_fill <= $end_fill)
+            {
+              my $new = ref($filler) ? &$filler($start_fill, $end_fill) :
+                $filler ;
+              push @extracted, [$start_fill, $end_fill, $new] ;
+              push @replaced,  [$start_fill, $end_fill, $new];
+            }
         }
 
       if (defined $end_offset and $end_offset >= 0) 
         {
-          push @extracted, [$self->[$end][0],$end_elem, $self->[$end][2]];
-          push @replaced , [@{$self->[$end]}]; 
+          my $payload = $self->[$end][2] ;
+          my $s = $self->[$end][0] ;
+          my @a = ($s,$end_elem, $payload) ;
+          push @extracted, [@a];
+          push @replaced , [@a];
+          if ($end_elem < $self->[$end][1])
+            {
+              my $s2 = $end_elem + 1 ;
+              my $e2 = $self->[$end][1] ;
+              push @replaced , [$s2, $e2, &$copy($payload,$s2,$e2)];
+            }
+          &$set($payload,$s, $end_elem) if defined $set ;
           $length++ ;
         }
     }
 
-  splice (@$self, $start,$length , @replaced) if defined $filler;
+  if (defined $filler)
+    {
+      splice (@$self, $start,$length , @replaced) ;
+    }
 
-  return ref($self)->new(@extracted) ;
+  my $ret = ref($self)->new(@extracted) ;
+  return $ret ;
 }
 
 sub clobbered_items {
@@ -217,10 +250,10 @@ sub clobbered_items {
 }
 
 sub consolidate {
-  my ($self,$bottom,$top) = @_;
+  my ($self,$bottom,$top,$set) = @_;
 
-  $bottom = 0 unless defined $bottom ;
-  $top = $#$self unless defined $top;
+  $bottom = 0 if (not defined $bottom or $bottom < 0 );
+  $top = $#$self if (not defined $top or $top > $#$self) ;
 
   #print "consolidate from $top to $bottom\n";
 
@@ -230,8 +263,9 @@ sub consolidate {
           $self->[$i][0] == $self->[$i-1][1]+1 )
         {
           #print "consolidate splice ",$i-1,",2\n";
-          splice @$self, $i-1, 2,
-            [$self->[$i-1][0], $self->[$i][1], $self->[$i][2]] ;
+          my ($s,$e,$p) = ($self->[$i-1][0], $self->[$i][1], $self->[$i][2]);
+          splice @$self, $i-1, 2, [$s, $e, $p] ;
+          $set->($p,$s,$e) if defined $set ;
         }
     }
 
@@ -254,10 +288,7 @@ sub set_consolidate_range {
   #print "splice $offset,$length\n";
   splice @$self, $offset,$length,@list ;
 
-  my $b = $offset > 0 ? $offset - 1 : 0 ;
-  my $t = $offset+ @list ;
-  $t = $#$self if $t > $#$self ;
-  $self->consolidate($b , $t ) ;
+  $self->consolidate($offset - 1 , $offset+ @list ) ;
 
   return $length ? 1 : 0 ;#($b , $t ) ;
 
@@ -265,7 +296,7 @@ sub set_consolidate_range {
 
 sub get_splice_parms {
   my $self = shift;
-  my ($start_elem,$end_elem,$value,$spawn) = @_ ;
+  my ($start_elem,$end_elem,$value,$copy) = @_ ;
 
   my $end_range = $#{$self};
   my $range_size = @$self ; # nb of elements
@@ -301,8 +332,10 @@ sub get_splice_parms {
   #conflicting element
   if ($start_offset > 0) {
     my $item = $self->[$start][2] ;
-    my $new = defined($spawn) ? $spawn->($item) : $item ;
-    push @modified ,[$self->[$start][0], $start_elem-1, $new ];
+    my $s = $self->[$start][0] ;
+    my $e = $start_elem-1 ;
+    my $new = defined($copy) ? $copy->($item,$s,$e) : $item ;
+    push @modified ,[$s, $e, $new ];
   }
 
   push @modified, [$start_elem,$end_elem,$value] if defined $value ;
@@ -313,8 +346,10 @@ sub get_splice_parms {
       and $end_elem < $self->[$end][1]
      ) {
     my $item = $self->[$end][2] ;
-    my $new = defined($spawn) ? $spawn->($item) : $item ;
-    push @modified , [$end_elem+1, $self->[$end][1], $new] ;
+    my $s = $end_elem+1 ;
+    my $e = $self->[$end][1] ;
+    my $new = defined($copy) ? $copy->($item,$s,$e) : $item ;
+    push @modified , [$s, $e, $new] ;
   }
 
   my $extra =  (defined $end_offset and $end_offset >= 0) ? 1 : 0 ;
