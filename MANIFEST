@@ -1,7 +1,7 @@
 Array/IntSpan.pm
 Array/IntSpan/Fields.pm
 Array/IntSpan/IP.pm
-Changes
+ChangeLog
 MANIFEST
 Makefile.PL
 README
