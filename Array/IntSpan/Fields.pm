@@ -193,13 +193,14 @@ sub adapt_range_in_cb
     return map
       {
         my $old_cb = $_; # required for closure to work
-        sub
-          {
-            my ($s_int,$e_int,$value) = @_ ;
-            my ($s,$e) = $self->int_to_field($s_int,$e_int) ;
-
-            $old_cb->($s,$e,$value);
-          }
+        defined $old_cb ?
+          sub
+            {
+              my ($s_int,$e_int,$value) = @_ ;
+              my ($s,$e) = $self->int_to_field($s_int,$e_int) ;
+              $old_cb->($s,$e,$value);
+            }
+              : undef ;
       } @callbacks ;
   }
 

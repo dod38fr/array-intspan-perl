@@ -587,7 +587,7 @@ twice:
 It will be the callback responsability to make sure that the range
 C<0-4> and C<7-10> holds 2 I<different> objects.
 
-=head2 get_range (start, end [, filler, copy_cb [, set_cb]])
+=head2 get_range (start, end [, filler | undef , copy_cb [, set_cb]])
 
 This method returns a range (actually an Array::IntSpan object) from
 C<start> to C<end>.
