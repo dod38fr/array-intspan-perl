@@ -1,20 +1,23 @@
 ##########################################################################
 #
-# Array::IntSpan::IP - a Module for arrays using IP addresses as indices
+# Array::IntSpan::Fields - IntSpan array using integer fields as indices
 #
-# Author: Toby Everett
-# Revision: 1.01
-# Last Change: Makefile.PL
+# Author: Dominique Dumont
 ##########################################################################
-# Copyright 2000 Toby Everett.  All rights reserved.
+# Copyright 2003 Dominique Dumont.  All rights reserved.
 #
 # This file is distributed under the Artistic License. See
 # http://www.ActiveState.com/corporate/artistic_license.htm or
 # the license that comes with your perl distribution.
 #
 # For comments, questions, bugs or general interest, feel free to
-# contact Toby Everett at teverett@alascom.att.com
+# contact Dominique Dumont dominique.dumont@hp.com
 ##########################################################################
+
+# $Author$
+# $Date$
+# $Name$
+# $Revision$
 
 use strict;
 use warnings; 
@@ -32,31 +35,33 @@ use overload
   # fallback on default behavior for all other operators
   fallback => 1 ;
 
-sub new {
-  my $proto = shift ;
-  my $class = ref($proto) || $proto;
-  my $format = shift ;
+sub new 
+  {
+    my $proto = shift ;
+    my $class = ref($proto) || $proto;
+    my $format = shift ;
 
-  if (ref $format)
-    {
-      # in fact the user want a regular IntSpan
-      return Array::IntSpan->new($format,@_);
-    }
+    if (ref $format)
+      {
+        # in fact the user want a regular IntSpan
+        return Array::IntSpan->new($format,@_);
+      }
 
-  my @temp = @_ ;
-  my $self = {};
-  bless $self, $class;
-  $self->set_format($format) ;
+    my @temp = @_ ;
+    my $self = {};
+    bless $self, $class;
+    $self->set_format($format) ;
 
-  foreach my $i (@temp) {
-    $i->[0] = $self->field_to_int($i->[0]);
-    $i->[1] = $self->field_to_int($i->[1]);
+    foreach my $i (@temp) 
+      {
+        $i->[0] = $self->field_to_int($i->[0]);
+        $i->[1] = $self->field_to_int($i->[1]);
+      }
+
+    $self->{range}= Array::IntSpan->new(@temp) ;
+
+    return $self;
   }
-
-  $self->{range}= Array::IntSpan->new(@temp) ;
-
-  return $self;
-}
 
 sub set_format
   {
@@ -116,13 +121,12 @@ sub field_to_int
 
 sub get_range 
   {
-    my $self = shift;
-    my $got = $self->{range}->get_range
-      (
-       $self->field_to_int(shift),
-       $self->field_to_int(shift),
-       $self->adapt_range_in_cb(@_)
-      );
+    my ($self,$s_field,$e_field) = splice @_,0,3 ;
+    my $s = $self->field_to_int($s_field) ;
+    my $e = $self->field_to_int($e_field) ;
+    my @newcb = $self->adapt_range_in_cb(@_) ;
+
+    my $got = $self->{range}->get_range($s,$e,@newcb) ;
 
     my $ret = bless {range => $got }, ref($self) ;
     $ret->set_format($self->{format}) ;
@@ -136,15 +140,20 @@ sub lookup
     $self->{range}->lookup(@keys) ;
   }
 
-sub consolidate
+sub clear
   {
     my $self = shift;
-    return $self->{range}->consolidate
-      (
-       $self->field_to_int(shift),
-       $self->field_to_int(shift),
-       $self->adapt_range_in_cb(@_)
-      );
+    @{$self->{range}} = () ;
+  }
+
+sub consolidate
+  {
+    my ($self,$s_field,$e_field) = splice @_,0,3 ;
+    my $s = $self->field_to_int($s_field) ;
+    my $e = $self->field_to_int($e_field) ;
+    my @newcb = $self->adapt_range_in_cb(@_) ;
+
+    return $self->{range}->consolidate($s,$e,@newcb) ;
   }
 
 
@@ -153,15 +162,12 @@ foreach my $method (qw/set_range set_consolidate_range/)
     no strict 'refs' ;
     *$method = sub 
       {
-        my $self = shift;
+        my ($self,$s_field,$e_field,$value) = splice @_,0,4 ;
+        my $s = $self->field_to_int($s_field) ;
+        my $e = $self->field_to_int($e_field) ;
+        my @newcb = $self->adapt_range_in_cb(@_) ;
 
-        return $self->{range}->$method
-          (
-           $self->field_to_int(shift),
-           $self->field_to_int(shift),
-           shift,
-           $self->adapt_range_in_cb(@_)
-          );
+        return $self->{range}->$method ($s, $e, $value, @newcb);
       };
   }
 
@@ -177,9 +183,11 @@ sub adapt_range_in_cb
         my $old_cb = $_; # required for closure to work
         sub
           {
-            $old_cb->($self->int_to_field($_[0]),
-                      $self->int_to_field($_[1]),
-                      $_[2]);
+            my ($s_int,$e_int,$value) = @_ ;
+            my $s = $self->int_to_field($s_int) ;
+            my $e = $self->int_to_field($e_int) ;
+
+            $old_cb->($s,$e,$value);
           }
       } @callbacks ;
   }
@@ -188,9 +196,11 @@ sub get_element
   {
     my ($self,$idx) = @_;
     my $elt = $self->{range}[$idx] || return () ;
-    return ($self->int_to_field($elt->[0]),
-            $self->int_to_field($elt->[1]),
-            $elt->[2]) ;
+    my ($s_int,$e_int,$value) = @$elt ;
+    my $s = $self->int_to_field($s_int) ;
+    my $e = $self->int_to_field($e_int) ;
+
+    return ($s,$e, $value) ;
   }
 
 1;
@@ -199,70 +209,67 @@ __END__
 
 =head1 NAME
 
-Array::IntSpan::IP - a Module for arrays using IP addresses as indices
+Array::IntSpan::Fields -  IntSpan array using integer fields as indices
 
 =head1 SYNOPSIS
 
-  use Array::IntSpan::IP;
+  use Array::IntSpan::Fields;
 
-  my $foo = Array::IntSpan::IP->new(['123.45.67.0',   '123.45.67.255', 'Network 1'],
-                                    ['123.45.68.0',   '123.45.68.127', 'Network 2'],
-                                    ['123.45.68.128', '123.45.68.255', 'Network 3']);
+  my $foo = Array::IntSpan::Fields
+   ->new( '1.2.4',
+          ['0.0.1','0.1.0','ab'],
+          ['1.0.0','1.0.3','cd']);
 
-  print "The address 123.45.68.37 is on network ".$foo->lookup("\173\105\150\45").".\n";
-  unless (defined($foo->lookup(((123*256+45)*256+65)*256+67))) {
-    print "The address 123.45.65.67 is not on a known network.\n";
-  }
+  print "Address 0.0.15 has ".$foo->lookup("0.0.15").".\n";
 
-  print "The address 123.45.68.177 is on network ".$foo->lookup("123.45.68.177").".\n";
-
-  $foo->set_range('123.45.68.128', '123.45.68.255', 'Network 4');
-  print "The address 123.45.68.177 is now on network ".$foo->lookup("123.45.68.177").".\n";
+  $foo->set_range('1.0.4','1.1.0','ef') ;
 
 =head1 DESCRIPTION
 
-C<Array::IntSpan::IP> brings the advantages of C<Array::IntSpan> to IP address indices.  Anywhere
-you use an index in C<Array::IntSpan>, you can use an IP address in one of three forms in
-C<Array::IntSpan::IP>.  The three accepted forms are:
+C<Array::IntSpan::Fields> brings the advantages of C<Array::IntSpan>
+to indices made of integer fields like an IP address and an ANSI SS7 point code.
 
-=over 4
+The number of integer and their maximum value is defined when calling
+the constructor (or the C<set_format> method). The example in the
+synopsis defines an indice with 3 fields where their maximum values
+are 1,3,15 (or 0x1,0x3,0xf).
 
-=item Dotted decimal
+This module converts the fields into integer before storing them into
+the L<Array::IntSpan> module.
 
-This is the standard human-readable format for IP addresses.  The conversion checks that the
-octets are in the range 0-255.  Example: C<'123.45.67.89'>.
+=head1 CONSTRUCTOR
 
-=item Network string
+=head2 new (...)
 
-A four character string representing the octets in network order. Example: C<"\173\105\150\131">.
-
-=item Integer
-
-A integer value representing the IP address. Example: C<((123*256+45)*256+67)*256+89> or
-C<2066563929>.
-
-=back
-
-Note that the algorithm has no way of distinguishing between the integer values 1000 through 9999
-and the network string format.  It will presume network string format in these instances.  For
-instance, the integer C<1234> (representing the address C<'0.0.4.210'>) will be interpreted as
-C<"\61\62\63\64">, or the IP address C<'49.50.51.52'>.  This is unavoidable since Perl does not
-strongly type integers and strings separately and there is no other information available to
-distinguish between the two in this situation.  I do not expect that this will be a problem in
-most situations. Most users will probably use dotted decimal or network string notations, and even
-if they do use the integer notation the likelyhood that they will be using the addresses
-C<'0.0.3.232'> through C<'0.0.39.15'> as indices is relatively low.
+The first parameter defines the size of the integer of the fields, in
+number of bits. For an IP address, the field definition would be
+C<8,8,8,8>.
 
 =head1 METHODS
 
-=head2 ip_as_int
+All methods of L<Array::IntSpan> are available.
 
-The class method C<Array::IntSpan::IP::ip_as_int> takes as its one parameter the IP address in one
-of the three formats mentioned above and returns the integer notation.
+=head2 set_format( field_description )
+
+Set another field description. Beware: no conversion or checking is
+done. When changing the format, old indices may become illegal.
+
+=head2 int_to_field ( integer )
+
+Returns the field representation of the integer.
+
+=head2 field_to_int ( field )
+
+Returns the integer value of the field. May craok if the fields values
+are too great with respect to the filed description.
 
 =head1 AUTHOR
 
-Toby Everett, teverett@alascom.att.com
+Dominique Dumont, dominique.dumont@hp.com
+
+Copyright (c) 2003 Dominique Dumont. All rights reserved.
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
 
 =cut
 
