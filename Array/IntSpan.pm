@@ -3,18 +3,18 @@
 # Array::IntSpan - a Module for handling arrays using IntSpan techniques
 #
 # Author: Toby Everett, Dominique Dumont
-# Revision: 1.01
-# Last Change: Fixed Makefile.PL
+#
 ##########################################################################
-# Copyright 2000,2003 Toby Everett, Dominique Dumont.  All rights reserved.
+# Copyright 2003-2004 Dominique Dumont.  All rights reserved.
+# Copyright 2000 Toby Everett.  All rights reserved.
 #
 # This file is distributed under the Artistic License. See
 # http://www.ActiveState.com/corporate/artistic_license.htm or
 # the license that comes with your perl distribution.
 #
 # For comments, questions, bugs or general interest, feel free to
-# contact Toby Everett at teverett@alascom.att.com or
-# Dominique Dumont dominique.dumont@hp.com
+# contact Dominique Dumont at dominique.dumont@hp.com
+# or Toby Everett at teverett@alascom.att.com
 ##########################################################################
 
 # $Author$
@@ -721,9 +721,13 @@ Dominique Dumont, dominique.dumont@hp.com
 
 =back
 
-Copyright (c) 2000,2003 Toby Everett, Dominique Dumont. All rights
-reserved.  This program is free software; you can redistribute it
-and/or modify it under the same terms as Perl itself.
+Copyright (c) 2000 Toby Everett.
+Copyright (c) 2003-2004 Dominique Dumont. 
+All rights reserved.  This program is free software.
+
+This module is distributed under the Artistic License. See
+http://www.ActiveState.com/corporate/artistic_license.htm or the
+license that comes with your perl distribution.
 
 =cut
 
