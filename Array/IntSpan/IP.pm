@@ -109,44 +109,52 @@ Array::IntSpan::IP - a Module for arrays using IP addresses as indices
 
 =head1 DESCRIPTION
 
-C<Array::IntSpan::IP> brings the advantages of C<Array::IntSpan> to IP address indices.  Anywhere
-you use an index in C<Array::IntSpan>, you can use an IP address in one of three forms in
-C<Array::IntSpan::IP>.  The three accepted forms are:
+C<Array::IntSpan::IP> brings the advantages of C<Array::IntSpan> to IP
+address indices.  Anywhere you use an index in C<Array::IntSpan>, you
+can use an IP address in one of three forms in C<Array::IntSpan::IP>.
+The three accepted forms are:
 
 =over 4
 
 =item Dotted decimal
 
-This is the standard human-readable format for IP addresses.  The conversion checks that the
-octets are in the range 0-255.  Example: C<'123.45.67.89'>.
+This is the standard human-readable format for IP addresses.  The
+conversion checks that the octets are in the range 0-255.  Example:
+C<'123.45.67.89'>.
 
 =item Network string
 
-A four character string representing the octets in network order. Example: C<"\173\105\150\131">.
+A four character string representing the octets in network
+order. Example: C<"\173\105\150\131">.
 
 =item Integer
 
-A integer value representing the IP address. Example: C<((123*256+45)*256+67)*256+89> or
-C<2066563929>.
+A integer value representing the IP address. Example:
+C<((123*256+45)*256+67)*256+89> or C<2066563929>.
 
 =back
 
-Note that the algorithm has no way of distinguishing between the integer values 1000 through 9999
-and the network string format.  It will presume network string format in these instances.  For
-instance, the integer C<1234> (representing the address C<'0.0.4.210'>) will be interpreted as
-C<"\61\62\63\64">, or the IP address C<'49.50.51.52'>.  This is unavoidable since Perl does not
-strongly type integers and strings separately and there is no other information available to
-distinguish between the two in this situation.  I do not expect that this will be a problem in
-most situations. Most users will probably use dotted decimal or network string notations, and even
-if they do use the integer notation the likelyhood that they will be using the addresses
-C<'0.0.3.232'> through C<'0.0.39.15'> as indices is relatively low.
+Note that the algorithm has no way of distinguishing between the
+integer values 1000 through 9999 and the network string format.  It
+will presume network string format in these instances.  For instance,
+the integer C<1234> (representing the address C<'0.0.4.210'>) will be
+interpreted as C<"\61\62\63\64">, or the IP address C<'49.50.51.52'>.
+This is unavoidable since Perl does not strongly type integers and
+strings separately and there is no other information available to
+distinguish between the two in this situation.  I do not expect that
+this will be a problem in most situations. Most users will probably
+use dotted decimal or network string notations, and even if they do
+use the integer notation the likelyhood that they will be using the
+addresses C<'0.0.3.232'> through C<'0.0.39.15'> as indices is
+relatively low.
 
 =head1 METHODS
 
 =head2 ip_as_int
 
-The class method C<Array::IntSpan::IP::ip_as_int> takes as its one parameter the IP address in one
-of the three formats mentioned above and returns the integer notation.
+The class method C<Array::IntSpan::IP::ip_as_int> takes as its one
+parameter the IP address in one of the three formats mentioned above
+and returns the integer notation.
 
 =head1 AUTHOR
 
