@@ -1,0 +1,87 @@
+NAME
+    Array::IntSpan - a Module for handling arrays using IntSpan
+    techniques
+
+SYNOPSIS
+      use Array::IntSpan;
+
+      my $foo = Array::IntSpan->new([0, 59, 'F'], [60, 69, 'D'], [80, 89, 'B']);
+
+      print "A score of 84% results in a ".$foo->lookup(84).".\n";
+      unless (defined($foo->lookup(70))) {
+        print "The grade for the score 70% is currently undefined.\n";
+      }
+
+      $foo->set_range(70, 79, 'C');
+      print "A score of 75% now results in a ".$foo->lookup(75).".\n";
+
+      $foo->set_range(0, 59, undef);
+      unless (defined($foo->lookup(40))) {
+        print "The grade for the score 40% is now undefined.\n";
+      }
+
+      $foo->set_range(87, 89, 'B+');
+      $foo->set_range(85, 100, 'A');
+      $foo->set_range(100, 1_000_000, 'A+');
+
+DESCRIPTION
+    `Array::IntSpan' brings the speed advantages of `Set::IntSpan'
+    (written by Steven McDougall) to arrays. Uses include
+    manipulating grades, routing tables, or any other situation
+    where you have mutually exclusive ranges of integers that map to
+    given values.
+
+    `Array::IntSpan::IP' is also provided with the distribution. It
+    lets you use IP addresses in any of three forms (dotted decimal,
+    network string, and integer) for the indices into the array. See
+    the POD for that module for more information.
+
+  Installation instructions
+
+    Standard `Make::Maker' approach or just copy `Array/IntSpan.pm'
+    into `site/lib/Array/IntSpan.pm' and `Array/IntSpan/IP.pm' into
+    `site/lib/Array/IntSpan/IP.pm'.
+
+METHODS
+  new
+
+    The `new' method takes an optional list of array elements. The
+    elements should be in the form `[start_index, end_index,
+    value]'. They should be in sorted order and there should be no
+    overlaps. The internal method `_check_structure' will be called
+    to verify the data is correct. If you wish to avoid the
+    performance penalties of checking the structure, you can use
+    `Data::Dumper' to dump an object and use that code to
+    reconstitute it.
+
+  set_range
+
+    This method takes three parameters - the `start_index', the
+    `end_index', and the `value'. If you wish to erase a range,
+    specify `undef' for the `value'. It properly deals with
+    overlapping ranges and will replace existing data as
+    appropriate. If the new range lies after the last existing
+    range, the method will execute in O(1) time. If the new range
+    lies within the existing ranges, the method executes in O(n)
+    time, where n is the number of ranges. The code is not
+    completely optimized and will make up to three calls to `splice'
+    if the new range intersects with existing ranges. It does not
+    consolidate contiguous ranges that have the same `value'.
+
+    If you have a large number of inserts to do, it would be
+    beneficial to sort them first. Sorting is O(n lg(n)), and since
+    appending is O(1), that will be considerably faster than the
+    O(n^2) time for inserting n unsorted elements.
+
+    The method returns `0' if there were no overlapping ranges and
+    `1' if there were.
+
+  lookup
+
+    This method takes as a single parameter the `index' to look up.
+    If there is an appropriate range, the method will return the
+    associated value. Otherwise, it returns `undef'.
+
+AUTHOR
+    Toby Everett, teverett@alascom.att.com
+
