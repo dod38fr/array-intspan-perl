@@ -84,67 +84,52 @@ sub get_range {
   my $self = shift;
   my($new_elem) = [@_];
 
-  my $end_set = $#$self;
+  my $end_range = $#{$self};
+  my $range_size = @$self ; # nb of elements
 
-  #Before we binary search, we'll first check to see if this is an append operation
-  if ($self->[$end_set][1] < $new_elem->[0]) {
+  # Before we binary search, first check if we fall outsode the range
+  if ($self->[$end_range][1] < $new_elem->[0] or $new_elem->[1] < $self->[0][0] ) {
     return ref($self)->new() ;
   }
 
-  my $start_elem = $self->search(0,$end_set,$new_elem->[0]) ;
+  my $start = $self->search(0,     $range_size,  $new_elem->[0]) ;
+  my $end   = $self->search($start,$range_size,  $new_elem->[1]) ;
 
-  # now $start contains the index of the element to create or the
-  # first element that will be displaced
+  my $start_offset = $new_elem->[0] - $self->[$start][0] ;
+  my $end_offset   = defined $self->[$end] ? $new_elem->[1] - $self->[$end][0] : undef ;
 
-  #If there is no conflict between this element and the new element, we are home free
-  if ($start_elem > $end_set || $new_elem->[1] < $self->[$start_elem][0]) {
-    return ref($self)->new();
-  }
+  #print "get_range: start $start, end $end, start_offset $start_offset";
+  #print ", end_offset $end_offset" if defined $end_offset ;
+  #print "\n";
 
   my @extracted ;
 
   # check if new element is a subset of start_elem
-  if ($self->[$start_elem][0] <= $new_elem->[0] 
-      and $new_elem->[1] <= $self->[$start_elem][1] ) {
-    return ref($self)->new([@$new_elem[0,1],$self->[$start_elem][2]]) ;
+  if ($start_offset >= 0 
+      and $new_elem->[1] <= $self->[$start][1] 
+     ) {
+    return ref($self)->new([@$new_elem[0,1],$self->[$start][2]]) ;
   }
 
-  #If we are here, we need to test for whether we need to frag the conflicting element
-  if ($self->[$start_elem][0] < $new_elem->[0] ) {
-    # split the old element in 2. The 2nd part starts at the same
-    # place than the start of new_elem
-    # TBB dclone objects
-    push @extracted, [$new_elem->[0], $self->[$start_elem][1], $self->[$start_elem][2]];
-    $start_elem ++ ;
-  }
+  if ($start_offset >= 0 ) 
+    {
+      push @extracted, [$new_elem->[0], $self->[$start][1], $self->[$start][2]];
+      $start ++ ;
+    }
 
-  return ref($self)->new(@extracted) if $start_elem > $end_set;
-
-  #Then we go a searching for where to end this insert
-
-  my $end_elem =  $self->search($start_elem,$end_set+1,$new_elem->[1]) ;
-
-  #Do a fragmentation check
   my $end_frag ;
-  if (defined $self->[$end_elem] 
-      and $self->[$end_elem][0] <= $new_elem->[1]
-      and $self->[$end_elem][1] > $new_elem->[1]) {
-      # split the old element in 2. The 1st part ends at the same
-      # place than the end of new_elem
-    # TBD dclone objects
-    $end_frag = [$self->[$end_elem][0],$new_elem->[1], $self->[$end_elem][2]];
-    $end_elem -- ;
+  if (defined $end_offset and $end_offset >= 0) {
+    $end_frag = [$self->[$end][0],$new_elem->[1], $self->[$end][2]];
   }
 
-  # if new element does not go over end_elem, skip this one
-  $end_elem -- if $self->[$end_elem][0] > $new_elem->[1] ;
+  #print "get_range after frag: start $start, end $end, start_offset $start_offset";
+  #print ", end_offset $end_offset" if defined $end_offset ;
+  #print "\n";
 
-  push @extracted, @$self[$start_elem .. $end_elem] ;
+  push @extracted, @$self[$start .. $end - 1 ] if $start < $end ;
 
   push @extracted, $end_frag if defined $end_frag ;
 
-  # this is a string comparison. We may want to use a deep data
-  # structure comparison like Struct::Compare.
   return ref($self)->new(@extracted) ;
 }
 
