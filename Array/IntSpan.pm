@@ -89,7 +89,10 @@ sub get_range {
   my $range_size = @$self ; # nb of elements
 
   # Before we binary search, first check if we fall outsode the range
-  if ($self->[$end_range][1] < $new_elem->[0] or $new_elem->[1] < $self->[0][0] ) {
+  if ($end_range < 0 or
+      $self->[$end_range][1] < $new_elem->[0] or 
+      $new_elem->[1] < $self->[0][0] 
+     ) {
     return ref($self)->new() ;
   }
 
@@ -149,7 +152,7 @@ sub consolidate {
   $bottom = 0 unless defined $bottom ;
   $top = $#$self unless defined $top;
 
-  #print "consolidate from $bottom to $top\n";
+  #print "consolidate from $top to $bottom\n";
 
   for (my $i= $top; $i>0; $i--)
     {
@@ -189,7 +192,7 @@ sub set_consolidate_range {
   $t = $#$self if $t > $#$self ;
   $self->consolidate($b , $t ) ;
 
-  return $length ? 1 : 0 ;
+  return $length ? 1 : 0 ;#($b , $t ) ;
 
 }
 
@@ -201,7 +204,8 @@ sub get_splice_parms {
   my $range_size = @$self ; # nb of elements
 
   #Before we binary search, we'll first check to see if this is an append operation
-  if ($self->[$end_range][1] < $new_elem->[0]) {
+  if ( $end_range < 0 or 
+      $self->[$end_range][1] < $new_elem->[0]) {
     return ( $range_size, 0, $new_elem);
   } 
 
@@ -272,13 +276,15 @@ sub lookup {
 sub _check_structure {
   my $self = shift;
 
-  foreach my $i (0..$#{$self}) {
+  return unless $#$self >= 0;
+
+  foreach my $i (0..$#$self) {
     @{$self->[$i]} == 3 or
         croak("Array::IntSpan::_check_structure failed - element $i lacks 3 entries.");
-    $self->[$i]->[0] <= $self->[$i]->[1] or
+    $self->[$i][0] <= $self->[$i][1] or
         croak("Array::IntSpan::_check_structure failed - element $i has bad indices.");
     if ($i > 0) {
-      $self->[$i-1]->[1] < $self->[$i]->[0] or
+      $self->[$i-1][1] < $self->[$i][0] or
           croak("Array::IntSpan::_check_structure failed - element $i doesn't come after previous element.");
     }
   }
