@@ -57,6 +57,12 @@ sub search {
   return $start ;
 }
 
+sub clear 
+  {
+    my $self = shift;
+    @$self = () ;
+  }
+
 sub set_range {
   my $self = shift;
 
