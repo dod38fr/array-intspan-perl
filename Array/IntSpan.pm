@@ -446,7 +446,7 @@ __END__
 
 =head1 NAME
 
-Array::IntSpan - a Module for handling arrays using IntSpan techniques
+Array::IntSpan - Handles arrays of scalars or objects using IntSpan techniques
 
 =head1 SYNOPSIS
 
