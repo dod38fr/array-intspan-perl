@@ -161,8 +161,9 @@ sub clear
 sub consolidate
   {
     my ($self,$s_field,$e_field) = splice @_,0,3 ;
-    my ($s, $e) = $self->field_to_int($s_field,$e_field) ;
-    my @newcb = $self->adapt_range_in_cb(@_) ;
+    my ($s, $e) = $self->field_to_int($s_field,$e_field) 
+      if defined $s_field and defined $e_field;
+    my @newcb = $self->adapt_range_in_cb(@_) if @_;
 
     return $self->{range}->consolidate($s,$e,@newcb) ;
   }
