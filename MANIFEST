@@ -14,3 +14,4 @@ t/get_range.t.ptkdb
 t/get_splice_parms.t
 t/search.t
 t/set_range.t
+META.yml                                 Module meta-data (added by MakeMaker)
