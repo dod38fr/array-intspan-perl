@@ -33,14 +33,185 @@ sub new {
   return $self;
 }
 
+sub search {
+  my ($self,$start,$end,$index) = @_ ;
+
+  while ($start < $end) {
+    my $mid = int(($start+$end)/2);
+    if ($self->[$mid]->[1] < $index) {
+      $start = $mid+1;
+    } else {
+      $end = $mid;
+    }
+  }
+  return $start ;
+}
+
 sub set_range {
+  my $self = shift;
+
+  #Test that we were passed appropriate values
+  @_ == 3 or croak("Array::IntSpan::set_range should be called with three values.");
+  $_[0] <= $_[1] or
+      croak("Array::IntSpan::set_range called with bad indices: $_[0] and $_[1].");
+
+  my ($offset,$length,@list) = $self -> get_splice_parms(@_) ;
+
+  #print "splice $offset,$length,@list\n";
+  splice @$self, $offset,$length,@list ;
+
+  return $length ? 1 : 0 ;
+}
+
+sub check_clobber {
+  my $self = shift;
+
+  my @clobbered = $self->clobbered_items(@_) ;
+
+  map {warn "will clobber @$_ with @_\n" ;} @clobbered ;
+
+  return @clobbered ;
+}
+
+sub clobbered_items {
   my $self = shift;
   my($new_elem) = [@_];
 
-  #Test that we were passed appropriate values
-  @{$new_elem} == 3 or croak("Array::IntSpan::set_range should be called with three values.");
-  $new_elem->[0] <= $new_elem->[1] or
-      croak("Array::IntSpan::set_range called with bad indices: $new_elem->[0] and $new_elem->[1].");
+  my $end_set = $#$self;
+
+  #Before we binary search, we'll first check to see if this is an append operation
+  if ($self->[$end_set][1] < $new_elem->[0]) {
+    return () ;
+  }
+
+  #Binary search for the first element after the last element that is entirely
+  #before the element to be inserted (say that ten times fast)
+  my $start_elem = $self->search(0,$end_set,$new_elem->[0]) ;
+
+  # now $start contains the index of the element to create or the
+  # first element that will be displaced
+
+  #If there is no conflict between this element and the new element, we are home free
+  if ($start_elem > $end_set || $new_elem->[1] < $self->[$start_elem][0]) {
+    return ();
+  }
+
+  my @clobbered ;
+
+  # check if new element is a subset of start_elem
+  if ($self->[$start_elem][0] <= $new_elem->[0] 
+      and $new_elem->[1] <= $self->[$start_elem][1]
+      and $self->[$start_elem][2] ne $new_elem->[2] ) {
+    return ([@$new_elem[0,1],$self->[$start_elem][2]]) ;
+  }
+
+  #If we are here, we need to test for whether we need to frag the conflicting element
+  if ($self->[$start_elem][0] < $new_elem->[0] 
+      and $self->[$start_elem][2] ne $new_elem->[2] ) {
+    # split the old element in 2. The 2nd part starts at the same
+    # place than the start of new_elem
+    push @clobbered, [$new_elem->[0], $self->[$start_elem][1], $self->[$start_elem][2]];
+    $start_elem ++ ;
+  }
+
+  return @clobbered if $start_elem > $end_set;
+
+  #Then we go a searching for where to end this insert
+
+  my $end_elem =  $self->search($start_elem,$end_set+1,$new_elem->[1]) ;
+  my $value = $new_elem->[2] ;
+
+  #Do a fragmentation check
+  my $end_frag ;
+  if (defined $self->[$end_elem] 
+      and $self->[$end_elem][0] <= $new_elem->[1]
+      and $self->[$end_elem][1] > $new_elem->[1]
+      and $self->[$end_elem][2] ne $value) {
+      # split the old element in 2. The 1st part ends at the same
+      # place than the end of new_elem
+    $end_frag = [$self->[$end_elem][0],$new_elem->[1], $self->[$end_elem][2]];
+    $end_elem -- ;
+  }
+
+  # if new element does not go over end_elem, skip this one
+  $end_elem -- if $self->[$end_elem][0] > $new_elem->[1] ;
+
+  push @clobbered, grep {$_->[2] ne $value} @$self[$start_elem .. $end_elem] ;
+
+  push @clobbered, $end_frag if defined $end_frag ;
+
+  # this is a string comparison. We may want to use a deep data
+  # structure comparison like Struct::Compare.
+  return @clobbered ;
+}
+
+sub consolidate {
+  my $self = shift;
+
+  my @old = @$self;  # backup
+  @$self = () ; # fresh start
+
+  my $oldv ;
+  map {
+    if (not defined $oldv or $oldv ne $_->[2])
+      {
+        push @$self, $_ ;
+        $oldv = $_->[2] ;
+      }
+    else
+      {
+        $self->[$#$self][1]=$_->[1] ;
+      }
+  } @old ;
+
+}
+
+sub set_consolidate_range {
+  my $self = shift;
+  my ($start,$end,$value, $clobber) = @_ ;
+  $clobber = 1 unless defined $clobber ;
+
+  my ($offset,$length,@list) = $self -> get_splice_parms($start,$end,$value) ;
+
+  my @clobbered = grep {defined $_}
+    @$self[$offset .. $offset+$length-1] if $length ;
+
+  if (@clobbered and not $clobber)
+    {
+      my $str = join("\t\n", map ("will clobber @$_ with $start,$end,$value\n" ,
+                                  @clobbered )) ;
+      die "error :".$str ;
+    }
+
+  splice @$self, $offset,$length,@list ;
+
+  # merge above
+  my $above = $offset+ scalar(@list) - 1 ;
+  #print "offset $offset length $length  above $above\n";
+  if ($above < $#$self  # substitution occured before last element
+      and $self->[$above][1] == $self->[$above+1][0] -1 # check for adjacent ranges
+      and $self->[$above][2] eq $self->[$above+1][2])
+    {
+      splice @$self, $above , 2, 
+        [$self->[$above][0], $self->[$above+1][1], $self->[$above][2] ] ;
+    }
+
+  # merge below
+  if ($offset  # there was a subsitution after element 0
+      and $self->[$offset-1][1]+1 == $self->[$offset][0] # check for adjacent ranges
+      and $self->[$offset-1][2] eq $self->[$offset][2])  # check for equal values
+    {
+      splice @$self, $offset-1 , 2, 
+        [$self->[$offset-1][0], $self->[$offset][1], $self->[$offset][2] ] ;
+    }
+
+  return $length ? 1 : 0 ;
+
+}
+
+sub get_splice_parms {
+  my $self = shift;
+  my($new_elem) = [@_];
 
   my($start, $end) = (0, $#{$self});
 
@@ -50,23 +221,23 @@ sub set_range {
   } else {
     #Binary search for the first element after the last element that is entirely
     #before the element to be inserted (say that ten times fast)
-    while ($start < $end) {
-      my $mid = int(($start+$end)/2);
-      if ($self->[$mid]->[1] < $new_elem->[0]) {
-        $start = $mid+1;
-      } else {
-        $end = $mid;
-      }
-    }
+    $start = $self->search($start,$end,$new_elem->[0]) ;
   }
+
+  # now $start contains the index of the element to create or the
+  # first element that will be displaced
 
   #If there is no conflict between this element and the new element, we are home free
   if ($start > $#{$self} || $new_elem->[1] < $self->[$start]->[0]) {
-    splice(@{$self}, $start, 0, $new_elem);
-    return 0;
+    # we should compare value between $new_elem->[2] and $self->[$start]->[2]
+
+    return ( $start, 0, $new_elem);
+
   } else {
     #If we are here, we need to test for whether we need to frag the conflicting element
     if ($self->[$start]->[0] < $new_elem->[0]) {
+      # split the old element in 2. The 2nd part starts at the same
+      # place than the start of new_elem
       splice(@{$self}, $start, 1,
           [$self->[$start]->[0], $new_elem->[0]-1, $self->[$start]->[2]],
           [$new_elem->[0], $self->[$start]->[1], $self->[$start]->[2]]);
@@ -75,19 +246,14 @@ sub set_range {
 
     #Then we go a searching for where to end this insert
     my $start_elem = $start;
-    $end = $#{$self}+1;
-    while ($start < $end) {
-      my $mid = int(($start+$end)/2);
-      if ($self->[$mid]->[1] < $new_elem->[1]) {
-        $start = $mid+1;
-      } else {
-        $end = $mid;
-      }
-    }
+
+    $start =  $self->search($start,$#{$self}+1,$new_elem->[1]) ;
 
     #Do a fragmentation check
-    if ($self->[$start]->[0] <= $new_elem->[1]) {
+    if (defined $self->[$start] and $self->[$start]->[0] <= $new_elem->[1]) {
       if ($self->[$start]->[1] > $new_elem->[1]) {
+        # split the old element in 2. The 1st part ends at the same
+        # place than the end of new_elem
         splice(@{$self}, $start, 1,
             [$self->[$start]->[0], $new_elem->[1], $self->[$start]->[2]],
             [$new_elem->[1]+1, $self->[$start]->[1], $self->[$start]->[2]]);
@@ -97,11 +263,10 @@ sub set_range {
 
     #Then we splice in the new element.  If the value is undef, we just remove the old stuff
     if (defined $new_elem->[2]) {
-      splice(@{$self}, $start_elem, $start-$start_elem, $new_elem);
+      return ($start_elem, $start-$start_elem, $new_elem);
     } else {
-      splice(@{$self}, $start_elem, $start-$start_elem);
+      return ($start_elem, $start-$start_elem);
     }
-    return 1;
   }
 }
 
