@@ -30,6 +30,9 @@ use Storable qw/dclone/ ;
 
 our $VERSION = sprintf "%d.%03d", q$Revision$ =~ /(\d+)\.(\d+)/;
 
+sub min { my @a = sort(@_) ; return $a[0] ; }
+sub max { my @a = sort(@_) ; return $a[$#a] ; }
+
 sub new {
   my $class = shift;
 
@@ -83,56 +86,86 @@ sub check_clobber {
 
 sub get_range {
   my $self = shift;
-  my($new_elem) = [@_];
+  #my($new_elem) = [@_];
+  my ($start_elem,$end_elem,$filler) = @_ ;
 
   my $end_range = $#{$self};
   my $range_size = @$self ; # nb of elements
 
-  # Before we binary search, first check if we fall outsode the range
+  # Before we binary search, first check if we fall outside the range
   if ($end_range < 0 or
-      $self->[$end_range][1] < $new_elem->[0] or 
-      $new_elem->[1] < $self->[0][0] 
+      $self->[$end_range][1] < $start_elem or 
+      $end_elem < $self->[0][0] 
      ) {
-    return ref($self)->new() ;
+    my @arg = defined $filler ? ([@_]) : () ;
+    return ref($self)->new(@arg) ;
   }
 
-  my $start = $self->search(0,     $range_size,  $new_elem->[0]) ;
-  my $end   = $self->search($start,$range_size,  $new_elem->[1]) ;
+  my $start = $self->search(0,     $range_size,  $start_elem) ;
+  my $end   = $self->search($start,$range_size,  $end_elem) ;
 
-  my $start_offset = $new_elem->[0] - $self->[$start][0] ;
-  my $end_offset   = defined $self->[$end] ? $new_elem->[1] - $self->[$end][0] : undef ;
+  my $start_offset = $start_elem - $self->[$start][0] ;
+  my $end_offset   = defined $self->[$end] ? 
+    $end_elem - $self->[$end][0] : undef ;
 
-  #print "get_range: start $start, end $end, start_offset $start_offset";
-  #print ", end_offset $end_offset" if defined $end_offset ;
-  #print "\n";
+  print "get_range: start $start, end $end, start_offset $start_offset";
+  print ", end_offset $end_offset" if defined $end_offset ;
+  print "\n";
 
   my @extracted ;
 
-  # check if new element is a subset of start_elem
-  if ($start_offset >= 0 
-      and $new_elem->[1] <= $self->[$start][1] 
-     ) {
-    return ref($self)->new([@$new_elem[0,1],$self->[$start][2]]) ;
-  }
 
-  if ($start_offset >= 0 ) 
+  # handle the start
+  if (defined $filler and $start_offset < 0)
     {
-      push @extracted, [$new_elem->[0], $self->[$start][1], $self->[$start][2]];
-      $start ++ ;
+      my $new = ref($filler) ? dclone($filler) : $filler ;
+      my $e = min ($end_elem, $self->[$start][0]-1) ;
+      push @extracted, [$start_elem, $e, $new ] ;
     }
 
-  my $end_frag ;
-  if (defined $end_offset and $end_offset >= 0) {
-    $end_frag = [$self->[$end][0],$new_elem->[1], $self->[$end][2]];
-  }
+  if ($self->[$start][0] <= $end_elem)
+    {
+      my $s = max ($start_elem,$self->[$start][0]) ;
+      my $e = min ($end_elem, $self->[$start][1]) ;
+      push @extracted, [$s, $e, $self->[$start][2]];
+    }
 
-  #print "get_range after frag: start $start, end $end, start_offset $start_offset";
-  #print ", end_offset $end_offset" if defined $end_offset ;
-  #print "\n";
+  # handle the middle if any
+  if ($start + 1 <= $end -1 )
+    {
+      print "adding " ;
+      foreach my $idx ( $start+1 .. $end - 1)
+        {
+          print "idx $idx," ;
+          if (defined $filler)
+            {
+              my $new = ref($filler) ? dclone($filler) : $filler ;
+              push @extracted,  
+                [$self->[$idx-1][1]+1, $self->[$idx][0]-1, $new ] ;
+            }
+          push @extracted, $self->[$idx]; 
+        }
+      print "\n";
+    }
 
-  push @extracted, @$self[$start .. $end - 1 ] if $start < $end ;
+  # handle the end
+  if ($end > $start)
+    {
+      if (defined $filler)
+        {
+          # must add end element filler
+          my $end_fill = (not defined $end_offset or $end_offset < 0) ?
+            $end_elem :  $self->[$end][0]-1 ;
 
-  push @extracted, $end_frag if defined $end_frag ;
+          my $new = ref($filler) ? dclone($filler) : $filler ;
+          push @extracted, [$self->[$end-1][1]+1, $end_fill, $new] ;
+        }
+
+      if (defined $end_offset and $end_offset >= 0) 
+        {
+          push @extracted, [$self->[$end][0],$end_elem, $self->[$end][2]];
+        }
+    }
 
   return ref($self)->new(@extracted) ;
 }
@@ -220,7 +253,8 @@ sub get_splice_parms {
   my $end   = $self->search($start,$range_size,  $new_elem->[1]) ;
 
   my $start_offset = $new_elem->[0] - $self->[$start][0] ;
-  my $end_offset   = defined $self->[$end] ? $new_elem->[1] - $self->[$end][0] : undef ;
+  my $end_offset   = defined $self->[$end] ? 
+    $new_elem->[1] - $self->[$end][0] : undef ;
 
   #print "get_splice_parms: start $start, end $end, start_offset $start_offset";
   #print ", end_offset $end_offset" if defined $end_offset ;
@@ -231,7 +265,6 @@ sub get_splice_parms {
   #If we are here, we need to test for whether we need to frag the
   #conflicting element
   if ($start_offset > 0) {
-    # TBD dclone objects, beware of CMM_SLOT ...
     my $item = $self->[$start][2] ;
     my $new = ref($item) ? dclone($item) : $item ;
     push @modified ,[$self->[$start][0], $new_elem->[0]-1, $new ];
@@ -291,9 +324,9 @@ sub _check_structure {
 }
 
 #The following code is courtesy of Mark Jacob-Dominus,
-
 sub croak {
   require Carp;
+  no warnings 'redefine' ;
   *croak = \&Carp::croak;
   goto &croak;
 }
