@@ -1,7 +1,7 @@
 
 use warnings FATAL => qw(all);
 use ExtUtils::testlib;
-use Test::More tests => 22 ;
+use Test::More tests => 27 ;
 use Data::Dumper ;
 
 use Array::IntSpan;
@@ -18,60 +18,31 @@ is_deeply( $r , \@expect, 'new content ok') ;
 
 $r->consolidate ;
 
-is(@$r, 3, 'consolidate') || diag(Dumper $r);
+@expect= ([1,3,'ab'], [6, 7, 'cd'], [8, 14, 'ef']) ;
+is_deeply( $r , \@expect, 'consolidate ok') || diag(Dumper $r);
 diag(Dumper $r) if $trace ;
 
-@range = (5,5,'cd') ;
-isnt ($r->set_consolidate_range(@range),1, "set_consolidate_range @range") ;
+my $sub = sub {"c:".$_[0];} ;
 
-is(@$r, 3) || diag(Dumper $r);
-diag(Dumper $r) if $trace ;
+foreach my $t (
+               [[5,5,'cd'],0,[[1,3,'ab'], [5, 7, 'cd'], [8, 14, 'ef']]],
+               [[13,16,'ef'],1,[[1,3,'ab'], [5, 7, 'cd'], [8, 16, 'ef']]],
+               [[24,26,'ef'],0,[[1,3,'ab'], [5, 7, 'cd'], [8, 16, 'ef'],[24,26,'ef']]] ,
+               [[19,22,'ef'],0,[[1,3,'ab'], [5, 7, 'cd'], [8, 16, 'ef'],[19,22,'ef'],[24,26,'ef']]],
+               [[23,23,'efa'],0,[[1,3,'ab'], [5, 7, 'cd'], [8, 16, 'ef'],[19,22,'ef'],[23,23,'efa'],[24,26,'ef']]],
+               [[23,23,'ef'],1,[[1,3,'ab'], [5, 7, 'cd'], [8, 16, 'ef'],[19,26,'ef']]],
+               [[17,18,'efb'],0,[[1,3,'ab'], [5, 7, 'cd'], [8, 16, 'ef'],[17,18,'efb'],[19,26,'ef']]],
+               [[17,18,'ef'],1,[[1,3,'ab'], [5, 7, 'cd'], [8 ,26,'ef']]],
+               [[8,12,undef],1,[[1,3,'ab'], [5, 7, 'cd'], [13 ,26,'ef']]],
+               [[8,12,'gh',$sub],0,[[1,3,'ab'], [5, 7, 'cd'],[8,12,'gh'], [13 ,26,'ef']]],
+               [[13,20,'gh',$sub],1,[[1,3,'ab'], [5, 7, 'cd'],[8,20,'gh'], [21 ,26,'c:ef']]],
+               [[6,7,'gh',$sub],1,[[1,3,'ab'], [5, 5, 'c:cd'],[6,20,'gh'], [21 ,26,'c:ef']]],
+              )
+  {
+    my @range = @{$t->[0]} ;
+    is ($r->set_consolidate_range(@range),$t->[1], 
+        "set_consolidate_range @range[0,1]") ;
+    is_deeply($r, $t->[2], "result of @range[0,1]") || 
+      diag("Got ".Dumper($r)) ;
+  }
 
-@range = (13,16,'ef') ;
-is ($r->set_consolidate_range(@range),1, "set_consolidate_range @range") ;
-
-is(@$r, 3) || diag(Dumper $r);
-diag(Dumper $r) if $trace ;
-
-@range = (24,26,'ef') ;
-is ($r->set_consolidate_range(@range),0, "set_consolidate_range @range") ;
-
-is(@$r, 4 ) || diag(Dumper $r);
-diag(Dumper $r) if $trace ;
-
-@range = (19,22,'ef') ;
-is ($r->set_consolidate_range(@range),0, "set_consolidate_range @range") ;
-
-is(@$r, 5) || diag(Dumper $r);
-diag(Dumper $r) if $trace ;
-
-@range = (23,23,'efa') ;
-is ($r->set_consolidate_range(@range),0, "set_consolidate_range @range") ;
-
-is(@$r,  6) || diag(Dumper $r);
-diag(Dumper $r) if $trace ;
-
-@range = (23,23,'ef') ;
-is ($r->set_consolidate_range(@range),1, "set_consolidate_range @range") ;
-
-is(@$r, 4) || diag(Dumper $r);
-is($r->lookup(26),'ef') ;
-diag(Dumper $r) if $trace ;
-
-@range = (17,18,'efb') ;
-is ($r->set_consolidate_range(@range),0, "set_consolidate_range @range") ;
-
-is(@$r, 5) || diag(Dumper $r);
-diag(Dumper $r) if $trace ;
-
-@range = (17,18,'ef') ;
-is ($r->set_consolidate_range(@range),1, "set_consolidate_range @range") ;
-
-is(@$r, 3) || diag(Dumper $r);
-diag(Dumper $r) if $trace ;
-
-@range = (8,12,undef) ;
-is ($r->set_consolidate_range(@range),1, "set_consolidate_range 8 12 undef") ;
-
-is(@$r, 3) || diag(Dumper $r);
-diag(Dumper $r) if $trace ;

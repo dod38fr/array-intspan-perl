@@ -1,7 +1,7 @@
 
 use warnings FATAL => qw(all);
 use ExtUtils::testlib;
-use Test::More tests => 27 ;
+use Test::More tests => 30 ;
 use Data::Dumper ;
 
 use Array::IntSpan;
@@ -15,6 +15,8 @@ diag(Dumper $r) if $trace ;
 
 ok ( defined($r) , 'Array::IntSpan new() works') ;
 is_deeply( $r , \@expect, 'new content ok') ;
+
+my $spawn = sub { 'sp:'.$_[0] ;} ;
 
 foreach my $a ( 
                [[0, 0,'bc'],[0,0,[0, 0,'bc']]],
@@ -42,6 +44,9 @@ foreach my $a (
                [[7, 9,'bc'],[1,1,[6, 6,'cd'],[7,9,'bc']]],
                [[9,11,'bc'],[1,1,[6, 8,'cd'],[9,11,'bc']]],
                [[10,11,'bc'],[2,0,[10,11,'bc']]],
+               [[10,11,'bc', $spawn],[2,0,[10,11,'bc']]],
+               [[9,11,'bc', $spawn],[1,1,[6, 8,'sp:cd'],[9,11,'bc']]],
+               [[2, 2,'bc', $spawn],[0,1,[1, 1,'sp:ab'],[2, 2,'bc'],[3,3,'sp:ab']]],
               )
   {
     my @r = $r->get_splice_parms(@{$a->[0]}) ;

@@ -1,7 +1,7 @@
 
 use warnings FATAL => qw(all);
 use ExtUtils::testlib;
-use Test::More tests => 36 ;
+use Test::More tests => 38 ;
 use Data::Dumper ;
 
 use Array::IntSpan;
@@ -34,7 +34,9 @@ foreach my $t (
     is(@$r, 3, 'check nb of items in range') || diag(Dumper $r);
   }
 
+
 my $fill = 'fi' ;
+
 foreach my $t (
                [[32,34],[[32,34,$fill]]],
                [[0,0],[[0,0,$fill]]],
@@ -49,6 +51,19 @@ foreach my $t (
   {
     my $new = $r->get_range(@{$t->[0]}, $fill) ;
     is_deeply($new, $t->[1], "get_range with fill @{$t->[0]}") || 
+      diag("From ".Dumper($r)."Got ".Dumper ($new)) ;
+    is(@$r, 3, 'check nb of items in filled range') || diag(Dumper $r);
+  }
+
+my $sub = sub { "sfi"};
+$fill = &$sub ;
+
+foreach my $t (
+               [[0,9],[[0,0,$fill],[1,3,'ab'],[4,4,$fill],[5,7,'cd'],[8,9,$fill]]],
+              )
+  {
+    my $new = $r->get_range(@{$t->[0]}, $sub) ;
+    is_deeply($new, $t->[1], "get_range with sub @{$t->[0]}") || 
       diag("From ".Dumper($r)."Got ".Dumper ($new)) ;
     is(@$r, 3, 'check nb of items in filled range') || diag(Dumper $r);
   }

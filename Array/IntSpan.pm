@@ -26,7 +26,6 @@ use strict;
 use warnings ;
 
 package Array::IntSpan;
-use Storable qw/dclone/ ;
 
 our $VERSION = sprintf "%d.%03d", q$Revision$ =~ /(\d+)\.(\d+)/;
 
@@ -62,9 +61,13 @@ sub set_range {
   my $self = shift;
 
   #Test that we were passed appropriate values
-  @_ == 3 or croak("Array::IntSpan::set_range should be called with three values.");
+  @_ == 3 or @_ == 4 or 
+    croak("Array::IntSpan::set_range should be called with 3 values and an optional code ref.");
   $_[0] <= $_[1] or
       croak("Array::IntSpan::set_range called with bad indices: $_[0] and $_[1].");
+
+  not defined $_[3] or ref($_[3]) eq 'CODE' or
+    croak("Array::IntSpan::set_range called without 4th parameter set as a sub ref");
 
   my ($offset,$length,@list) = $self -> get_splice_parms(@_) ;
 
@@ -118,7 +121,7 @@ sub get_range {
   # handle the start
   if (defined $filler and $start_offset < 0)
     {
-      my $new = ref($filler) ? dclone($filler) : $filler ;
+      my $new = ref($filler) ? &$filler : $filler ;
       my $e = min ($end_elem, $self->[$start][0]-1) ;
       push @extracted, [$start_elem, $e, $new ] ;
     }
@@ -139,7 +142,7 @@ sub get_range {
           print "idx $idx," ;
           if (defined $filler)
             {
-              my $new = ref($filler) ? dclone($filler) : $filler ;
+              my $new = ref($filler) ? &$filler : $filler ;
               push @extracted,  
                 [$self->[$idx-1][1]+1, $self->[$idx][0]-1, $new ] ;
             }
@@ -157,7 +160,7 @@ sub get_range {
           my $end_fill = (not defined $end_offset or $end_offset < 0) ?
             $end_elem :  $self->[$end][0]-1 ;
 
-          my $new = ref($filler) ? dclone($filler) : $filler ;
+          my $new = ref($filler) ? &$filler : $filler ;
           push @extracted, [$self->[$end-1][1]+1, $end_fill, $new] ;
         }
 
@@ -202,20 +205,17 @@ sub consolidate {
 
 sub set_consolidate_range {
   my $self = shift;
-  my ($start,$end,$value, $clobber) = @_ ;
-  $clobber = 1 unless defined $clobber ;
 
-  my ($offset,$length,@list) = $self -> get_splice_parms($start,$end,$value) ;
+  #Test that we were passed appropriate values
+  @_ == 3 or @_ == 4 or 
+    croak("Array::IntSpan::set_range should be called with 3 values and an optional code ref.");
+  $_[0] <= $_[1] or
+      croak("Array::IntSpan::set_range called with bad indices: $_[0] and $_[1].");
 
-  my @clobbered = grep {defined $_}
-    @$self[$offset .. $offset+$length-1] if $length ;
+  not defined $_[3] or ref($_[3]) eq 'CODE' or
+    croak("Array::IntSpan::set_range called without 4th parameter set as a sub ref");
 
-  if (@clobbered and not $clobber)
-    {
-      my $str = join("\t\n", map ("will clobber @$_ with $start,$end,$value\n" ,
-                                  @clobbered )) ;
-      die "error :".$str ;
-    }
+  my ($offset,$length,@list) = $self -> get_splice_parms(@_) ;
 
   #print "splice $offset,$length\n";
   splice @$self, $offset,$length,@list ;
@@ -231,30 +231,31 @@ sub set_consolidate_range {
 
 sub get_splice_parms {
   my $self = shift;
-  my $new_elem = [@_];
+  my ($start_elem,$end_elem,$value,$spawn) = @_ ;
 
   my $end_range = $#{$self};
   my $range_size = @$self ; # nb of elements
 
   #Before we binary search, we'll first check to see if this is an append operation
   if ( $end_range < 0 or 
-      $self->[$end_range][1] < $new_elem->[0]) {
-    return ( $range_size, 0, $new_elem);
-  } 
+      $self->[$end_range][1] < $start_elem
+     ) {
+    return ( $range_size, 0, [$start_elem,$end_elem,$value]);
+  }
 
   # Check for prepend operation
-  if ($new_elem->[1] < $self->[0][0] ) {
-    return ( 0 , 0, $new_elem);
+  if ($end_elem < $self->[0][0] ) {
+    return ( 0 , 0, [$start_elem,$end_elem,$value]);
   }
 
   #Binary search for the first element after the last element that is entirely
   #before the element to be inserted (say that ten times fast)
-  my $start = $self->search(0,     $range_size,  $new_elem->[0]) ;
-  my $end   = $self->search($start,$range_size,  $new_elem->[1]) ;
+  my $start = $self->search(0,     $range_size,  $start_elem) ;
+  my $end   = $self->search($start,$range_size,  $end_elem) ;
 
-  my $start_offset = $new_elem->[0] - $self->[$start][0] ;
+  my $start_offset = $start_elem - $self->[$start][0] ;
   my $end_offset   = defined $self->[$end] ? 
-    $new_elem->[1] - $self->[$end][0] : undef ;
+    $end_elem - $self->[$end][0] : undef ;
 
   #print "get_splice_parms: start $start, end $end, start_offset $start_offset";
   #print ", end_offset $end_offset" if defined $end_offset ;
@@ -266,20 +267,20 @@ sub get_splice_parms {
   #conflicting element
   if ($start_offset > 0) {
     my $item = $self->[$start][2] ;
-    my $new = ref($item) ? dclone($item) : $item ;
-    push @modified ,[$self->[$start][0], $new_elem->[0]-1, $new ];
+    my $new = defined($spawn) ? $spawn->($item) : $item ;
+    push @modified ,[$self->[$start][0], $start_elem-1, $new ];
   }
 
-  push @modified, $new_elem if defined $new_elem->[2] ;
+  push @modified, [$start_elem,$end_elem,$value] if defined $value ;
 
   #Do a fragmentation check
   if (defined $end_offset 
       and $end_offset >= 0 
-      and $new_elem->[1] < $self->[$end][1]
+      and $end_elem < $self->[$end][1]
      ) {
     my $item = $self->[$end][2] ;
-    my $new = ref($item) ? dclone($item) : $item ;
-    push @modified , [$new_elem->[1]+1, $self->[$end][1], $new] ;
+    my $new = defined($spawn) ? $spawn->($item) : $item ;
+    push @modified , [$end_elem+1, $self->[$end][1], $new] ;
   }
 
   my $extra =  (defined $end_offset and $end_offset >= 0) ? 1 : 0 ;

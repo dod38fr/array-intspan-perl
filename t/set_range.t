@@ -1,7 +1,7 @@
 
 use warnings FATAL => qw(all);
 use ExtUtils::testlib;
-use Test::More tests => 7 ;
+use Test::More tests => 9 ;
 use Data::Dumper ;
 
 use Array::IntSpan;
@@ -25,7 +25,15 @@ is($r->lookup(13), 'ef', 'lookup 13') ;
 diag(Dumper $r) if $trace ;
 
 @range = (8,13,'ef') ;
+@expect = ([1, 3, 'ab'], [6, 7, 'cd'], [8, 13, 'ef'], [14, 14, 'ef']) ;
 is ($r->set_range(@range),1, "set_range @range") ;
-is(@$r, 4) || diag(Dumper $r);
+is_deeply($r, \@expect) || diag(Dumper $r);
 diag(Dumper $r) if $trace ;
 
+my $sub = sub {"c:".$_[0];} ;
+
+@range = (10,13,'ef2') ;
+@expect = ([1, 3, 'ab'], [6, 7, 'cd'], [8, 9, 'c:ef'], [10, 13, 'ef2'], [14, 14, 'ef']) ;
+is ($r->set_range(@range,$sub),1, "set_range @range with sub") ;
+is_deeply($r, \@expect) || diag(Dumper $r);
+diag(Dumper $r) if $trace ;
