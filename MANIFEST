@@ -1,6 +1,14 @@
 Array/IntSpan.pm
 Array/IntSpan/IP.pm
 Changes
-Makefile.PL
 MANIFEST
+Makefile.PL
 README
+t/clobbered_items.t
+t/consolidate.t
+t/empty_span.t
+t/get_range.t
+t/get_range.t.ptkdb
+t/get_splice_parms.t
+t/search.t
+t/set_range.t
