@@ -91,8 +91,9 @@ sub check_clobber {
 sub get_element
   {
     my ($self,$idx) = @_;
-    return () unless defined $self->[$idx] ;
-    return @{$self->[$idx]}  ;
+    my $ref = $self->[$idx] ;
+    return () unless defined $ref ;
+    return @$ref ;
   }
 
 # call-back: 
@@ -324,13 +325,15 @@ sub get_splice_parms {
   #Before we binary search, we'll first check to see if this is an append operation
   if ( $end_range < 0 or 
       $self->[$end_range][1] < $start_elem
-     ) {
-    return ( $range_size, 0, [$start_elem,$end_elem,$value]);
-  }
+     ) 
+    {
+      return defined $value ? ( $range_size, 0, [$start_elem,$end_elem,$value]) :
+        ($range_size, 0) ;
+    }
 
   # Check for prepend operation
   if ($end_elem < $self->[0][0] ) {
-    return ( 0 , 0, [$start_elem,$end_elem,$value]);
+    return defined $value ? ( 0 , 0, [$start_elem,$end_elem,$value]) : (0,0);
   }
 
   #Binary search for the first element after the last element that is entirely
@@ -384,7 +387,7 @@ sub lookup {
   my($start, $end) = (0, $#{$self});
   while ($start < $end) {
     my $mid = int(($start+$end)/2);
-    if ($self->[$mid]->[1] < $key) {
+    if ($self->[$mid][1] < $key) {
       $start = $mid+1;
     } else {
       $end = $mid;
