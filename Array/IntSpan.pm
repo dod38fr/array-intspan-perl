@@ -97,13 +97,22 @@ sub get_range {
 
   # Before we binary search, first check if we fall outside the range
   if ($end_range < 0 or
-      $self->[$end_range][1] < $start_elem or 
-      $end_elem < $self->[0][0] 
-     ) {
-    my @arg = ref($filler) ? ([$start_elem,$end_elem,&$filler]) :
-      defined $filler ? [@_] : () ;
-    return ref($self)->new(@arg) ;
-  }
+      $self->[$end_range][1] < $start_elem 
+     )
+    {
+      my @arg = ref($filler) ? ([$start_elem,$end_elem,&$filler]) :
+        defined $filler ? ([@_]) : () ;
+      push @$self, @arg if @arg;
+      return ref($self)->new(@arg) ;
+    }
+
+  if ($end_elem < $self->[0][0]) 
+    {
+      my @arg = ref($filler) ? ([$start_elem,$end_elem,&$filler]) :
+        defined $filler ? ([@_]) : () ;
+      unshift @$self, @arg  if @arg;
+      return ref($self)->new(@arg) ;
+    }
 
   my $start = $self->search(0,     $range_size,  $start_elem) ;
   my $end   = $self->search($start,$range_size,  $end_elem) ;
@@ -112,19 +121,31 @@ sub get_range {
   my $end_offset   = defined $self->[$end] ? 
     $end_elem - $self->[$end][0] : undef ;
 
-  #print "get_range: start $start, end $end, start_offset $start_offset";
-  #print ", end_offset $end_offset" if defined $end_offset ;
-  #print "\n";
+#  print "get_range: start $start, end $end, start_offset $start_offset";
+#  print ", end_offset $end_offset" if defined $end_offset ;
+#  print "\n";
 
-  my @extracted ;
+  my @extracted ; 
+  my @replaced ;
+  my $length = 0;
 
+  # TBD. We may need to compute the length of the "covered" parts
+  # and do a splice with the "extracted" part. THis will clobber
+  # existing ranges with identical copies.
+
+  # compute a "replaced" array that does not split elements
 
   # handle the start
   if (defined $filler and $start_offset < 0)
     {
       my $new = ref($filler) ? &$filler : $filler ;
       my $e = min ($end_elem, $self->[$start][0]-1) ;
-      push @extracted, [$start_elem, $e, $new ] ;
+      # factorize and duplicate array ????
+      my @a = ($start_elem, $e, $new) ;
+      # don't use \@a, as we don't want @extracted and @replaced to
+      # point to the same memory area.
+      push @extracted, [ @a ] ;
+      push @replaced,  [ @a ] ; 
     }
 
   if ($self->[$start][0] <= $end_elem)
@@ -132,6 +153,9 @@ sub get_range {
       my $s = max ($start_elem,$self->[$start][0]) ;
       my $e = min ($end_elem, $self->[$start][1]) ;
       push @extracted, [$s, $e, $self->[$start][2]];
+      # must duplicate the start, end variable
+      push @replaced, [@{$self->[$start]}] ;
+      $length ++ ;
     }
 
   # handle the middle if any
@@ -144,10 +168,13 @@ sub get_range {
           if (defined $filler)
             {
               my $new = ref($filler) ? &$filler : $filler ;
-              push @extracted,  
-                [$self->[$idx-1][1]+1, $self->[$idx][0]-1, $new ] ;
+              my @a = ($self->[$idx-1][1]+1, $self->[$idx][0]-1, $new ) ;
+              push @extracted, [@a] ;
+              push @replaced,  [@a];
             }
-          push @extracted, $self->[$idx]; 
+          push @extracted, [@{$self->[$idx]}]; 
+          push @replaced , [@{$self->[$idx]}]; 
+          $length++ ;
         }
       #print "\n";
     }
@@ -162,14 +189,20 @@ sub get_range {
             $end_elem :  $self->[$end][0]-1 ;
 
           my $new = ref($filler) ? &$filler : $filler ;
-          push @extracted, [$self->[$end-1][1]+1, $end_fill, $new] ;
+          my @a = ($self->[$end-1][1]+1, $end_fill, $new) ;
+          push @extracted, [@a] ;
+          push @replaced, [@a];
         }
 
       if (defined $end_offset and $end_offset >= 0) 
         {
           push @extracted, [$self->[$end][0],$end_elem, $self->[$end][2]];
+          push @replaced , [@{$self->[$end]}]; 
+          $length++ ;
         }
     }
+
+  splice (@$self, $start,$length , @replaced) if defined $filler;
 
   return ref($self)->new(@extracted) ;
 }
