@@ -62,7 +62,8 @@ sub set_range {
 
   #Test that we were passed appropriate values
   @_ == 3 or @_ == 4 or 
-    croak("Array::IntSpan::set_range should be called with 3 values and an optional code ref.");
+    croak("Array::IntSpan::set_range should be called with 3 values and an ".
+          "optional code ref.");
   $_[0] <= $_[1] or
       croak("Array::IntSpan::set_range called with bad indices: $_[0] and $_[1].");
 
@@ -87,12 +88,24 @@ sub check_clobber {
   return @clobbered ;
 }
 
+sub get_element
+  {
+    my ($self,$idx) = @_;
+    return () unless defined $self->[$idx] ;
+    return @{$self->[$idx]}  ;
+  }
+
+# call-back: 
+# filler (start, end)
+# copy (start, end, payload )
+# set (start, end, payload)
+
 sub get_range {
   my $self = shift;
   #my($new_elem) = [@_];
   my ($start_elem,$end_elem, $filler, $copy, $set) = @_ ;
 
-  $copy = sub{$_[0];} unless defined $copy ;
+  $copy = sub{$_[2];} unless defined $copy ;
 
   my $end_range = $#{$self};
   my $range_size = @$self ; # nb of elements
@@ -124,9 +137,9 @@ sub get_range {
   my $end_offset   = defined $self->[$end] ? 
     $end_elem - $self->[$end][0] : undef ;
 
-#  print "get_range: start $start, end $end, start_offset $start_offset";
-#  print ", end_offset $end_offset" if defined $end_offset ;
-#  print "\n";
+  #print "get_range: start $start, end $end, start_offset $start_offset";
+  #print ", end_offset $end_offset" if defined $end_offset ;
+  #print "\n";
 
   my @extracted ; 
   my @replaced ;
@@ -154,7 +167,7 @@ sub get_range {
         {
           my $s1 = $self->[$start][0];
           my $e1 = $s - 1 ;
-          push @replaced, [$s1, $e1 , &$copy($payload,$s1,$e1) ];
+          push @replaced, [$s1, $e1 , &$copy($s1,$e1,$payload) ];
         }
       # must duplicate the start, end variable
       push @extracted, [$s, $e, $payload];
@@ -163,9 +176,9 @@ sub get_range {
         {
           my $s3 = $e+1 ;
           my $e3 = $self->[$start][1] ;
-          push @replaced, [$s3, $e3, &$copy($payload, $s3,$e3) ] ;
+          push @replaced, [$s3, $e3, &$copy($s3, $e3,$payload) ] ;
         }
-      &$set($payload,$s, $e) if defined $set ;
+      &$set($s,$e, $payload) if defined $set ;
       $length ++ ;
     }
 
@@ -224,9 +237,9 @@ sub get_range {
             {
               my $s2 = $end_elem + 1 ;
               my $e2 = $self->[$end][1] ;
-              push @replaced , [$s2, $e2, &$copy($payload,$s2,$e2)];
+              push @replaced , [$s2, $e2, &$copy($s2,$e2,$payload)];
             }
-          &$set($payload,$s, $end_elem) if defined $set ;
+          &$set($s,$end_elem, $payload) if defined $set ;
           $length++ ;
         }
     }
@@ -249,6 +262,9 @@ sub clobbered_items {
   return   grep {$_->[2] ne $range_value} @$item ;
 }
 
+
+# call-back: 
+# set (start, end, payload)
 sub consolidate {
   my ($self,$bottom,$top,$set) = @_;
 
@@ -265,7 +281,7 @@ sub consolidate {
           #print "consolidate splice ",$i-1,",2\n";
           my ($s,$e,$p) = ($self->[$i-1][0], $self->[$i][1], $self->[$i][2]);
           splice @$self, $i-1, 2, [$s, $e, $p] ;
-          $set->($p,$s,$e) if defined $set ;
+          $set->($s,$e,$p) if defined $set ;
         }
     }
 
@@ -275,25 +291,29 @@ sub set_consolidate_range {
   my $self = shift;
 
   #Test that we were passed appropriate values
-  @_ == 3 or @_ == 4 or 
-    croak("Array::IntSpan::set_range should be called with 3 values and an optional code ref.");
+  @_ == 3 or @_ == 5 or 
+    croak("Array::IntSpan::set_range should be called with 3 values ".
+          "and 2 optional code ref.");
   $_[0] <= $_[1] or
       croak("Array::IntSpan::set_range called with bad indices: $_[0] and $_[1].");
 
   not defined $_[3] or ref($_[3]) eq 'CODE' or
     croak("Array::IntSpan::set_range called without 4th parameter set as a sub ref");
 
-  my ($offset,$length,@list) = $self -> get_splice_parms(@_) ;
+  my ($offset,$length,@list) = $self -> get_splice_parms(@_[0,1,2,3]) ;
 
   #print "splice $offset,$length\n";
   splice @$self, $offset,$length,@list ;
+  my $nb = @list ;
 
-  $self->consolidate($offset - 1 , $offset+ @list ) ;
+  $self->consolidate($offset - 1 , $offset+ $nb , $_[4]) ;
 
   return $length ? 1 : 0 ;#($b , $t ) ;
 
 }
 
+# call-back: 
+# copy (start, end, payload )
 sub get_splice_parms {
   my $self = shift;
   my ($start_elem,$end_elem,$value,$copy) = @_ ;
@@ -334,7 +354,7 @@ sub get_splice_parms {
     my $item = $self->[$start][2] ;
     my $s = $self->[$start][0] ;
     my $e = $start_elem-1 ;
-    my $new = defined($copy) ? $copy->($item,$s,$e) : $item ;
+    my $new = defined($copy) ? $copy->($s,$e,$item) : $item ;
     push @modified ,[$s, $e, $new ];
   }
 
@@ -348,7 +368,7 @@ sub get_splice_parms {
     my $item = $self->[$end][2] ;
     my $s = $end_elem+1 ;
     my $e = $self->[$end][1] ;
-    my $new = defined($copy) ? $copy->($item,$s,$e) : $item ;
+    my $new = defined($copy) ? $copy->($s,$e,$item) : $item ;
     push @modified , [$s, $e, $new] ;
   }
 

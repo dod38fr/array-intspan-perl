@@ -1,4 +1,5 @@
 Array/IntSpan.pm
+Array/IntSpan/Fields.pm
 Array/IntSpan/IP.pm
 Changes
 MANIFEST
@@ -7,6 +8,7 @@ README
 t/clobbered_items.t
 t/consolidate.t
 t/empty_span.t
+t/fields.t
 t/get_range.t
 t/get_range.t.ptkdb
 t/get_splice_parms.t

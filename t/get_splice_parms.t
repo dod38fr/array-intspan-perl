@@ -16,7 +16,7 @@ diag(Dumper $r) if $trace ;
 ok ( defined($r) , 'Array::IntSpan new() works') ;
 is_deeply( $r , \@expect, 'new content ok') ;
 
-my $spawn = sub { 'sp:'.$_[0] ;} ;
+my $spawn = sub { 'sp:'.$_[2] ;} ;
 
 foreach my $a ( 
                [[0, 0,'bc'],[0,0,[0, 0,'bc']]],

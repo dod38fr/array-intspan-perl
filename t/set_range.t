@@ -30,7 +30,7 @@ is ($r->set_range(@range),1, "set_range @range") ;
 is_deeply($r, \@expect) || diag(Dumper $r);
 diag(Dumper $r) if $trace ;
 
-my $sub = sub {"c:".$_[0];} ;
+my $sub = sub {"c:".$_[2];} ;
 
 @range = (10,13,'ef2') ;
 @expect = ([1, 3, 'ab'], [6, 7, 'cd'], [8, 9, 'c:ef'], [10, 13, 'ef2'], [14, 14, 'ef']) ;
