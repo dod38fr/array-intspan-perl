@@ -26,6 +26,7 @@ use strict;
 use warnings ;
 
 package Array::IntSpan;
+use Storable qw/dclone/ ;
 
 our $VERSION = sprintf "%d.%03d", q$Revision$ =~ /(\d+)\.(\d+)/;
 
@@ -227,7 +228,9 @@ sub get_splice_parms {
   #conflicting element
   if ($start_offset > 0) {
     # TBD dclone objects, beware of CMM_SLOT ...
-    push @modified ,[$self->[$start][0], $new_elem->[0]-1, $self->[$start][2]] ;
+    my $item = $self->[$start][2] ;
+    my $new = ref($item) ? dclone($item) : $item ;
+    push @modified ,[$self->[$start][0], $new_elem->[0]-1, $new ];
   }
 
   push @modified, $new_elem if defined $new_elem->[2] ;
@@ -235,8 +238,11 @@ sub get_splice_parms {
   #Do a fragmentation check
   if (defined $end_offset 
       and $end_offset >= 0 
-      and $new_elem->[1] < $self->[$end][1]) {
-    push @modified , [$new_elem->[1]+1, $self->[$end][1], $self->[$end][2]] ;
+      and $new_elem->[1] < $self->[$end][1]
+     ) {
+    my $item = $self->[$end][2] ;
+    my $new = ref($item) ? dclone($item) : $item ;
+    push @modified , [$new_elem->[1]+1, $self->[$end][1], $new] ;
   }
 
   my $extra =  (defined $end_offset and $end_offset >= 0) ? 1 : 0 ;
