@@ -424,7 +424,10 @@ sub _check_structure {
         croak("Array::IntSpan::_check_structure failed - element $i has bad indices.");
     if ($i > 0) {
       $self->[$i-1][1] < $self->[$i][0] or
-          croak("Array::IntSpan::_check_structure failed - element $i doesn't come after previous element.");
+          croak("Array::IntSpan::_check_structure failed - element $i (",
+                ,$self->[$i][0],",",$self->[$i][1],
+                ") doesn't come after previous element (",
+                $self->[$i-1][0],",",$self->[$i-1][1],")");
     }
   }
 }

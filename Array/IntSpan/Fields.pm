@@ -78,52 +78,64 @@ sub set_format
 
 sub int_to_field
   {
-    my ($self, $int ) = @_;
-    return undef unless defined $int ;
-    my @res ;
-    foreach my $f (reverse @{$self->{fields}})
+    my $self = shift ;
+    my @all_int =  @_ ;
+    my @result ;
+
+    foreach my $int (@all_int)
       {
-        unshift @res, ($f->[0] < 32 ? ($int & $f->[1]) : $int ) ;
-        $int >>= $f->[0] ;
+        my @res ;
+        foreach my $f (reverse @{$self->{fields}})
+          {
+            unshift @res, ($f->[0] < 32 ? ($int & $f->[1]) : $int ) ;
+            $int >>= $f->[0] ;
+          }
+        push @result, join('.',@res) ;
       }
 
-    return join('.',@res) ;
+    return wantarray ? @result : $result[0];
   }
 
 sub field_to_int
   {
-    my ($self, $field ) = @_;
-    return undef unless defined $field ;
+    my $self = shift ;
 
-    my $f = $self->{fields};
-    my @array = split /\./,$field ;
+    my @all_field = @_;
+    my @result ;
 
-    croak "Expected ",scalar @$f, " fields for format $self->{format}, got ",
-      scalar @array," in '$field'\n" unless @array == @$f ;
-
-    my $res = 0 ;
-
-    my $i =0 ;
-
-    while ($i <= $#array)
+    foreach my $field (@all_field)
       {
-        my $shift = $f->[$i][0] ;
-        croak "Field value $array[$i] too great. Max is $f->[$i][1] (bit width is $shift)"
-          if $shift<32 and $array[$i] >> $shift ;
+        my $f = $self->{fields};
+        my @array = split /\./,$field ;
 
-        $res = ($res << $shift) + $array[$i++] ;
+        croak "Expected ",scalar @$f, 
+          " fields for format $self->{format}, got ",
+            scalar @array," in '$field'\n" unless @array == @$f ;
+
+        my $res = 0 ;
+
+        my $i =0 ;
+
+        while ($i <= $#array)
+          {
+            my $shift = $f->[$i][0] ;
+            croak "Field value $array[$i] too great. ",
+              "Max is $f->[$i][1] (bit width is $shift)"
+                if $shift<32 and $array[$i] >> $shift ;
+
+            $res = ($res << $shift) + $array[$i++] ;
+          }
+        #print "field_to_int: changed $field to $res for format $self->{format}\n";
+        push @result, $res ;
       }
 
-    #print "field_to_int: changed $field to $res for format $self->{format}\n";
-
-    return $res ;
+    return wantarray ? @result : $result[0];
   }
 
 sub get_range 
   {
     my ($self,$s_field,$e_field) = splice @_,0,3 ;
-    my $s = $self->field_to_int($s_field) ;
-    my $e = $self->field_to_int($e_field) ;
+    my ($s, $e) = $self->field_to_int($s_field,$e_field) ;
     my @newcb = $self->adapt_range_in_cb(@_) ;
 
     my $got = $self->{range}->get_range($s,$e,@newcb) ;
@@ -136,7 +148,7 @@ sub get_range
 sub lookup
   {
     my $self = shift;
-    my @keys = map {$self->field_to_int($_) } @_ ;
+    my @keys = $self->field_to_int(@_);
     $self->{range}->lookup(@keys) ;
   }
 
@@ -149,8 +161,7 @@ sub clear
 sub consolidate
   {
     my ($self,$s_field,$e_field) = splice @_,0,3 ;
-    my $s = $self->field_to_int($s_field) ;
-    my $e = $self->field_to_int($e_field) ;
+    my ($s, $e) = $self->field_to_int($s_field,$e_field) ;
     my @newcb = $self->adapt_range_in_cb(@_) ;
 
     return $self->{range}->consolidate($s,$e,@newcb) ;
@@ -163,8 +174,7 @@ foreach my $method (qw/set_range set_consolidate_range/)
     *$method = sub 
       {
         my ($self,$s_field,$e_field,$value) = splice @_,0,4 ;
-        my $s = $self->field_to_int($s_field) ;
-        my $e = $self->field_to_int($e_field) ;
+        my ($s, $e) = $self->field_to_int($s_field,$e_field) ;
         my @newcb = $self->adapt_range_in_cb(@_) ;
 
         return $self->{range}->$method ($s, $e, $value, @newcb);
@@ -175,7 +185,8 @@ sub adapt_range_in_cb
   {
     my $self = shift;
 
-    # the callbacks will be called with ($start, $end,$payload) or ($start,$end)
+    # the callbacks will be called with ($start, $end,$payload) or
+    # ($start,$end)
     my @callbacks = @_ ; 
 
     return map
@@ -184,8 +195,7 @@ sub adapt_range_in_cb
         sub
           {
             my ($s_int,$e_int,$value) = @_ ;
-            my $s = $self->int_to_field($s_int) ;
-            my $e = $self->int_to_field($e_int) ;
+            my ($s,$e) = $self->int_to_field($s_int,$e_int) ;
 
             $old_cb->($s,$e,$value);
           }
@@ -197,8 +207,7 @@ sub get_element
     my ($self,$idx) = @_;
     my $elt = $self->{range}[$idx] || return () ;
     my ($s_int,$e_int,$value) = @$elt ;
-    my $s = $self->int_to_field($s_int) ;
-    my $e = $self->int_to_field($e_int) ;
+    my ($s,$e) = $self->int_to_field($s_int,$e_int) ;
 
     return ($s,$e, $value) ;
   }
