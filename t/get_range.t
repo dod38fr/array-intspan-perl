@@ -1,7 +1,7 @@
 
 use warnings FATAL => qw(all);
 use ExtUtils::testlib;
-use Test::More tests => 38 ;
+use Test::More tests => 40 ;
 use Data::Dumper ;
 
 use Array::IntSpan;
@@ -59,6 +59,7 @@ my $sub = sub { "sfi"};
 $fill = &$sub ;
 
 foreach my $t (
+               [[30,39],[[30,39,$fill]]],
                [[0,9],[[0,0,$fill],[1,3,'ab'],[4,4,$fill],[5,7,'cd'],[8,9,$fill]]],
               )
   {

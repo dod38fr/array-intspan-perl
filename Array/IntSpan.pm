@@ -100,7 +100,8 @@ sub get_range {
       $self->[$end_range][1] < $start_elem or 
       $end_elem < $self->[0][0] 
      ) {
-    my @arg = defined $filler ? ([@_]) : () ;
+    my @arg = ref($filler) ? ([$start_elem,$end_elem,&$filler]) :
+      defined $filler ? [@_] : () ;
     return ref($self)->new(@arg) ;
   }
 
@@ -111,9 +112,9 @@ sub get_range {
   my $end_offset   = defined $self->[$end] ? 
     $end_elem - $self->[$end][0] : undef ;
 
-  print "get_range: start $start, end $end, start_offset $start_offset";
-  print ", end_offset $end_offset" if defined $end_offset ;
-  print "\n";
+  #print "get_range: start $start, end $end, start_offset $start_offset";
+  #print ", end_offset $end_offset" if defined $end_offset ;
+  #print "\n";
 
   my @extracted ;
 
@@ -136,10 +137,10 @@ sub get_range {
   # handle the middle if any
   if ($start + 1 <= $end -1 )
     {
-      print "adding " ;
+      #print "adding " ;
       foreach my $idx ( $start+1 .. $end - 1)
         {
-          print "idx $idx," ;
+          #print "idx $idx," ;
           if (defined $filler)
             {
               my $new = ref($filler) ? &$filler : $filler ;
@@ -148,7 +149,7 @@ sub get_range {
             }
           push @extracted, $self->[$idx]; 
         }
-      print "\n";
+      #print "\n";
     }
 
   # handle the end
