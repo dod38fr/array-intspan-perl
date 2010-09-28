@@ -1,3 +1,9 @@
+2010-09-28  Dominique Dumont  <dominique.dumont@hp.com> v2.002
+
+	* Array/IntSpan.pm (lookup): returns undef on an empty object
+	without mucking up internal data (Fixes RT 61700. Thanks to
+	Matthew Nodine for the report)
+
 2004-01-29  Dominique Dumont  <domi@komarr.grenoble.hp.com> v2.001
 
 	* IntSpan.pm: Updated copyright infos

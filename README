@@ -28,14 +28,14 @@ any important use.
 Legal mumbo jumbo:
 
  Copyright (c) 2000 Toby Everett. All rights reserved.
- Copyright (c) 2003-2004, Dominique Dumont. All rights reserved.
+ Copyright (c) 2003-2004,2010 Dominique Dumont. All rights reserved.
  This set of files is distributed under the Artistic License. See
  http://www.ActiveState.com/corporate/artistic_license.htm or
  the license that comes with your perl distribution.
 
 
  - Dominique Dumont
-   dominique_dumont@hp.com
+   ddumont at cpan dot org
 
 ---------------------------------------------------------------------
 INSTALLATION
@@ -45,10 +45,4 @@ INSTALLATION
    	 perl Makefile.PL
    	 make test          
    	 make install
-
-
-
-
-
-
 
