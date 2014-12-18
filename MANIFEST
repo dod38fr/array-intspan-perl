@@ -1,6 +1,6 @@
-Array/IntSpan.pm
-Array/IntSpan/Fields.pm
-Array/IntSpan/IP.pm
+lib/Array/IntSpan.pm
+lib/Array/IntSpan/Fields.pm
+lib/Array/IntSpan/IP.pm
 ChangeLog
 MANIFEST
 Makefile.PL
