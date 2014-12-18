@@ -734,7 +734,7 @@ Returns an array containing the Nth range element:
 
  ( start, end, value )
 
-=head2 consolidate( bottom, top , [ set_cb ] )
+=head2 consolidate( [ bottom, top , [ set_cb ]] )
 
 This function scan the range from the range index C<bottom> to C<top>
 and compare the values held by the adjacent ranges. If the values are
@@ -757,6 +757,7 @@ And consolidate will perform this call:
 
  &$set(1,9,obj_a) ;
 
+Consolidate the whole range when called without parameters.
 
 =head1 AUTHOR
 
