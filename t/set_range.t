@@ -1,7 +1,8 @@
+# -*- cperl-mode -*-
 
 use warnings FATAL => qw(all);
 use ExtUtils::testlib;
-use Test::More tests => 9 ;
+use Test::More tests => 10 ;
 use Data::Dumper ;
 
 use Array::IntSpan;
@@ -37,3 +38,9 @@ my $sub = sub {"c:".$_[2];} ;
 is ($r->set_range(@range,$sub),1, "set_range @range with sub") ;
 is_deeply($r, \@expect) || diag(Dumper $r);
 diag(Dumper $r) if $trace ;
+
+my $rs = Array::IntSpan->new() ;
+$rs->set('21','bar');
+$rs->set_range_as_string('1-10 ,13, 14-20', 'foo') ;
+is_deeply($rs, [[1,10,'foo'],[13,13,'foo'],[14,20,'foo'],[21,21,'bar']],"set_range_as_string")
+    || diag(Dumper $rs);

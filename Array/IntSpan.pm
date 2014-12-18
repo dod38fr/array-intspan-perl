@@ -59,6 +59,25 @@ sub clear {
     @$self = () ;
 }
 
+sub set_range_as_string {
+    my $self = shift;
+    my $str = shift;
+
+    $str =~ s/\s//g;
+
+    foreach my $substr (split /,/, $str) {
+        my @range = $substr =~ /-/ ? split /-/,$substr : ($substr) x 2;
+        $self->set_range(@range, @_);
+    }
+}
+
+sub set {
+    my $self = shift;
+    my $idx = shift;
+
+    $self->set_range($idx, $idx, @_);
+}
+
 sub set_range {
   my $self = shift;
 
@@ -595,6 +614,23 @@ twice:
 
 It will be the callback responsability to make sure that the range
 C<0-4> and C<7-10> holds 2 I<different> objects.
+
+=head2 set( index,  value [, code ref] )
+
+Set a single value. This may split an existing range. Actually calls:
+
+ set_range( index, index, value [, code ref] )
+
+=head2 set_range_as_string ( index,  string [, code ref] )
+
+Set one one several ranges specifed with a string. Ranges are separated by "-".
+Several ranges can be specified with commas.
+
+Example:
+
+  set_range_as_string( '1-10,13, 14-20', 'foo')
+
+White space are ignored.
 
 =head2 get_range (start, end [, filler | undef , copy_cb [, set_cb]])
 
