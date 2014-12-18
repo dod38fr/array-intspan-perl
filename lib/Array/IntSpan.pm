@@ -347,7 +347,12 @@ sub get_range_list {
         return map { [ @$_[0,1] ] } @$self;
     }
     else {
-        return join ',' , map { $_->[0] == $_->[1] ? $_->[0] : join('-',@$_[0,1]); } @$self;
+        return join ', ' , map {
+            my ($a,$b) =  @$_;
+                  $a == $b ? $a
+                : $a+1==$b ? join(', ',$a,$b)
+                :            join('-',$a,$b);
+        } @$self;
     }
 }
 
