@@ -13,15 +13,9 @@
 # the license that comes with your perl distribution.
 #
 # For comments, questions, bugs or general interest, feel free to
-# contact Dominique Dumont at dominique.dumont@hp.com
+# contact Dominique Dumont at ddumont@cpan.org
 # or Toby Everett at teverett@alascom.att.com
 ##########################################################################
-
-# $Author$
-# $Date$
-# $Name$
-# $Revision$
-
 
 use strict;
 use warnings ;
@@ -60,17 +54,16 @@ sub search {
 }
 
 # clear the range. Note the the $self ref is preserved
-sub clear
-  {
+sub clear {
     my $self = shift;
     @$self = () ;
-  }
+}
 
 sub set_range {
   my $self = shift;
 
   #Test that we were passed appropriate values
-  @_ == 3 or @_ == 4 or 
+  @_ == 3 or @_ == 4 or
     croak("Array::IntSpan::set_range should be called with 3 values and an ".
           "optional code ref.");
   $_[0] <= $_[1] or
@@ -108,7 +101,7 @@ sub get_element
     return @$ref ;
   }
 
-# call-back: 
+# call-back:
 # filler (start, end)
 # copy (start, end, payload )
 # set (start, end, payload)
@@ -126,7 +119,7 @@ sub get_range {
   # Before we binary search, first check if we fall before the range
   if ($end_range < 0 or $self->[$end_range][1] < $start_elem)
     {
-      my @arg = ref($filler) ? 
+      my @arg = ref($filler) ?
         ([$start_elem,$end_elem,&$filler($start_elem,$end_elem)]) :
           defined $filler ? ([@_]) : () ;
       push @$self, @arg if @arg;
@@ -134,9 +127,9 @@ sub get_range {
     }
 
   # Before we binary search, first check if we fall after the range
-  if ($end_elem < $self->[0][0]) 
+  if ($end_elem < $self->[0][0])
     {
-      my @arg = ref($filler) ? 
+      my @arg = ref($filler) ?
         ([$start_elem,$end_elem,&$filler($start_elem,$end_elem)]) :
           defined $filler ? ([@_]) : () ;
       unshift @$self, @arg  if @arg;
@@ -147,14 +140,14 @@ sub get_range {
   my $end   = $self->search($start,$range_size,  $end_elem) ;
 
   my $start_offset = $start_elem - $self->[$start][0] ;
-  my $end_offset   = defined $self->[$end] ? 
+  my $end_offset   = defined $self->[$end] ?
     $end_elem - $self->[$end][0] : undef ;
 
   #print "get_range: start $start, end $end, start_offset $start_offset";
   #print ", end_offset $end_offset" if defined $end_offset ;
   #print "\n";
 
-  my @extracted ; 
+  my @extracted ;
   my @replaced ;
   my $length = 0;
 
@@ -168,7 +161,7 @@ sub get_range {
       # point to the same memory area. But $new must point to the same
       # object
       push @extracted, [ @a ] ;
-      push @replaced,  [ @a ] ; 
+      push @replaced,  [ @a ] ;
     }
 
   if ($self->[$start][0] <= $end_elem)
@@ -214,8 +207,8 @@ sub get_range {
                   push @replaced,  [$start_fill, $end_fill, $new];
                 }
             }
-          push @extracted, [@{$self->[$idx]}]; 
-          push @replaced , [@{$self->[$idx]}]; 
+          push @extracted, [@{$self->[$idx]}];
+          push @replaced , [@{$self->[$idx]}];
           $length++ ;
         }
       #print "\n";
@@ -239,7 +232,7 @@ sub get_range {
             }
         }
 
-      if (defined $end_offset and $end_offset >= 0) 
+      if (defined $end_offset and $end_offset >= 0)
         {
           my $payload = $self->[$end][2] ;
           my $s = $self->[$end][0] ;
@@ -276,7 +269,7 @@ sub clobbered_items {
 }
 
 
-# call-back: 
+# call-back:
 # set (start, end, payload)
 sub consolidate {
   my ($self,$bottom,$top,$set) = @_;
@@ -304,7 +297,7 @@ sub set_consolidate_range {
   my $self = shift;
 
   #Test that we were passed appropriate values
-  @_ == 3 or @_ == 5 or 
+  @_ == 3 or @_ == 5 or
     croak("Array::IntSpan::set_range should be called with 3 values ".
           "and 2 optional code ref.");
   $_[0] <= $_[1] or
@@ -326,7 +319,7 @@ sub set_consolidate_range {
 }
 
 # internal function
-# call-back: 
+# call-back:
 # copy (start, end, payload )
 sub get_splice_parms {
   my $self = shift;
@@ -336,9 +329,9 @@ sub get_splice_parms {
   my $range_size = @$self ; # nb of elements
 
   #Before we binary search, we'll first check to see if this is an append operation
-  if ( $end_range < 0 or 
+  if ( $end_range < 0 or
       $self->[$end_range][1] < $start_elem
-     ) 
+     )
     {
       return defined $value ? ( $range_size, 0, [$start_elem,$end_elem,$value]) :
         ($range_size, 0) ;
@@ -355,7 +348,7 @@ sub get_splice_parms {
   my $end   = $self->search($start,$range_size,  $end_elem) ;
 
   my $start_offset = $start_elem - $self->[$start][0] ;
-  my $end_offset   = defined $self->[$end] ? 
+  my $end_offset   = defined $self->[$end] ?
     $end_elem - $self->[$end][0] : undef ;
 
   #print "get_splice_parms: start $start, end $end, start_offset $start_offset";
@@ -377,8 +370,8 @@ sub get_splice_parms {
   push @modified, [$start_elem,$end_elem,$value] if defined $value ;
 
   #Do a fragmentation check
-  if (defined $end_offset 
-      and $end_offset >= 0 
+  if (defined $end_offset
+      and $end_offset >= 0
       and $end_elem < $self->[$end][1]
      ) {
     my $item = $self->[$end][2] ;
@@ -671,7 +664,7 @@ To obtain this, get_range will perform the following calls:
  $obj_a1 = &cp(5,6,obj_a);
  &set(3,4,$obj_a) ;
  $obj_b = &cp(9,9,obj_b) ;
- &set(7-8,obj_b) ; 
+ &set(7-8,obj_b) ;
 
 =head2 lookup( index )
 
@@ -679,7 +672,7 @@ This method takes as a single parameter the C<index> to look up.  If
 there is an appropriate range, the method will return the associated
 value.  Otherwise, it returns C<undef>.
 
-=head2 get_element( element_number ) 
+=head2 get_element( element_number )
 
 Returns an array containing the Nth range element:
 
@@ -719,12 +712,12 @@ Toby Everett, teverett@alascom.att.com
 
 =item *
 
-Dominique Dumont, dominique.dumont@hp.com
+Dominique Dumont, ddumont@cpan.org
 
 =back
 
 Copyright (c) 2000 Toby Everett.
-Copyright (c) 2003-2004 Dominique Dumont. 
+Copyright (c) 2003-2004,2014 Dominique Dumont.
 All rights reserved.  This program is free software.
 
 This module is distributed under the Artistic License. See

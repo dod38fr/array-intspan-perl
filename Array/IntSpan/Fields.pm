@@ -11,7 +11,7 @@
 # the license that comes with your perl distribution.
 #
 # For comments, questions, bugs or general interest, feel free to
-# contact Dominique Dumont dominique.dumont@hp.com
+# contact Dominique Dumont ddumont@cpan.org
 ##########################################################################
 
 # $Author$
@@ -276,7 +276,7 @@ are too great with respect to the filed description.
 
 =head1 AUTHOR
 
-Dominique Dumont, dominique.dumont@hp.com
+Dominique Dumont, ddumont@cpan.org
 
 Copyright (c) 2003 Dominique Dumont. All rights reserved.
 This program is free software; you can redistribute it and/or
