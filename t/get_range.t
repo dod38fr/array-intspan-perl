@@ -1,11 +1,13 @@
+# -*- cperl-mode -*-
+
 use strict ;
 use warnings FATAL => qw(all);
 use ExtUtils::testlib;
-use Test::More tests => 48 ;
+use Test::More tests => 50 ;
 use Data::Dumper ;
 
 use Array::IntSpan;
-
+use XXX;
 my $trace = shift || 0 ;
 
 # test min max
@@ -146,3 +148,11 @@ foreach my $t (
     is_deeply($r2, $t->[2], "range after get_range with sub") || 
       diag("From ".$old."Expected ".Dumper($t->[2])."Got ".Dumper ($r2)) ;
   }
+
+@expect= ([1,3,'ab'],[5, 5, 'cd'], [13, 26, 'ef']) ;
+my $rs = Array::IntSpan->new(@expect) ;
+
+is_deeply([ $rs->get_range_list ], [[1,3],[5, 5], [13, 26] ], "get_ranges in list context");
+is_deeply(scalar $rs->get_range_list, '1-3,5,13-26', "get_ranges in scalar context");
+
+diag(Dumper $r) if $trace ;

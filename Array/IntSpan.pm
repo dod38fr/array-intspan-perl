@@ -5,7 +5,7 @@
 # Author: Toby Everett, Dominique Dumont
 #
 ##########################################################################
-# Copyright 2003-2004,2010 Dominique Dumont.  All rights reserved.
+# Copyright 2003-2004,2010,2014 Dominique Dumont.  All rights reserved.
 # Copyright 2000 Toby Everett.  All rights reserved.
 #
 # This file is distributed under the Artistic License. See
@@ -316,6 +316,20 @@ sub set_consolidate_range {
 
   return $length ? 1 : 0 ;#($b , $t ) ;
 
+}
+
+# get_range_list
+# scalar context -> return a string
+# list context => returns list of list
+
+sub get_range_list {
+    my ($self, %options) = @_;
+    if (wantarray) {
+        return map { [ @$_[0,1] ] } @$self;
+    }
+    else {
+        return join ',' , map { $_->[0] == $_->[1] ? $_->[0] : join('-',@$_[0,1]); } @$self;
+    }
 }
 
 # internal function
@@ -665,6 +679,12 @@ To obtain this, get_range will perform the following calls:
  &set(3,4,$obj_a) ;
  $obj_b = &cp(9,9,obj_b) ;
  &set(7-8,obj_b) ;
+
+=head2 get_range_list
+
+In scalar context, returns a list of range in a string like: "C<1-5,7,9-11>".
+
+In list context retunrs a list of list, E.g. C< ( [1,5], [7,7], 9,11])>.
 
 =head2 lookup( index )
 
