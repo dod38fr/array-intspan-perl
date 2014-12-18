@@ -24,7 +24,7 @@ use warnings;
 
 package Array::IntSpan::Fields;
 
-our $VERSION = sprintf "%d.%03d", q$Revision$ =~ /(\d+)\.(\d+)/;
+our $VERSION = '2.002';
 
 use Array::IntSpan;
 use Carp ;
