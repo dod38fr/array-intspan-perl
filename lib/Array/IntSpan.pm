@@ -479,7 +479,7 @@ __END__
 
 =head1 NAME
 
-Array::IntSpan - Handles arrays of scalars or objects using IntSpan techniques
+Array::IntSpan - Handles arrays of scalars or objects using integer ranges
 
 =head1 SYNOPSIS
 

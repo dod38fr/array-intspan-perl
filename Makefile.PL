@@ -5,6 +5,6 @@ WriteMakefile
   (
    'NAME'  => 'Array::IntSpan',
    'VERSION_FROM' => 'lib/Array/IntSpan.pm', # finds $VERSION
-   ABSTRACT   => 'Handles arrays of scalars or objects using IntSpan techniques',
+   ABSTRACT   => 'Handles arrays of scalars or objects using integer ranges',
    AUTHOR     => 'Dominique Dumont (ddumont@cpan.org)',
 );
