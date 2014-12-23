@@ -1,7 +1,7 @@
 
 This distribution provides a set of modules:
 
-Array::IntSpan - a Module for handling arrays using IntSpan techniques
+Array::IntSpan - a Module for handling arrays using integer ranges
 Array::IntSpan::Fields -  IntSpan array using integer fields as indices
 Array::IntSpan::IP - a Module for arrays using IP addresses as indices
 
