@@ -153,6 +153,6 @@ foreach my $t (
 my $rs = Array::IntSpan->new(@expect) ;
 
 is_deeply([ $rs->get_range_list ], [[1,3],[5, 5], [13, 26] ], "get_ranges in list context");
-is_deeply(scalar $rs->get_range_list, '1-3,5,13-26', "get_ranges in scalar context");
+is_deeply(scalar $rs->get_range_list, '1-3, 5, 13-26', "get_ranges in scalar context");
 
 diag(Dumper $r) if $trace ;
