@@ -1,3 +1,8 @@
+2014-12-24 v2.003
+
+    * Added set, set_range_as_string and get_range_list methods
+    * mention that consolidate can be called without arguments
+
 2010-09-28  Dominique Dumont  <ddumont@cpan.org> v2.002
 
 	* Array/IntSpan.pm (lookup): returns undef on an empty object
