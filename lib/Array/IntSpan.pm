@@ -22,7 +22,6 @@ use warnings ;
 
 package Array::IntSpan;
 
-our $VERSION = '2.003';
 
 sub min { my @a = sort {$a <=> $b} @_ ; return $a[0] ; }
 sub max { my @a = sort {$b <=> $a} @_ ; return $a[0] ; }
