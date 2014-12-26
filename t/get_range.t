@@ -7,7 +7,6 @@ use Test::More tests => 50 ;
 use Data::Dumper ;
 
 use Array::IntSpan;
-use XXX;
 my $trace = shift || 0 ;
 
 # test min max
