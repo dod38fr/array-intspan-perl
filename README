@@ -25,24 +25,39 @@ Version 2.001 was heavily modified from version 1.01. The module was
 heavily tested but you should test your application with v2.001 before
 any important use.
 
-Legal mumbo jumbo:
-
- Copyright (c) 2000 Toby Everett. All rights reserved.
- Copyright (c) 2003-2004,2010 Dominique Dumont. All rights reserved.
- This set of files is distributed under the Artistic License. See
- http://www.ActiveState.com/corporate/artistic_license.htm or
- the license that comes with your perl distribution.
-
-
- - Dominique Dumont
-   ddumont at cpan dot org
 
 ---------------------------------------------------------------------
-INSTALLATION
+INSTALLATION from CPAN
 
    	 gunzip -c <dist_file>.tar.gz | tar xvf -
    	 cd <dist_directory>
    	 perl Makefile.PL
    	 make test          
    	 make install
+
+INSTALLATION from git requires Dist::Zilla
+
+You must make sure that the following modules are installed:
+Dist::Zilla::Plugin::MetaResources
+Dist::Zilla::Plugin::Prepender
+Dist::Zilla::Plugin::Prereqs
+Dist::Zilla::PluginBundle::Filter
+
+On debian or ubuntu, do:
+
+sudo aptitude install \
+     libdist-zilla-plugin-prepender-perl \
+     libdist-zilla-plugins-cjm-perl \
+     libdist-zilla-perl
+
+
+Then run:
+
+dzil build 
+
+or 
+
+dzil test
+dzil build
+
 
