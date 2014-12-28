@@ -627,7 +627,7 @@ Set a single value. This may split an existing range. Actually calls:
 
 =head2 set_range_as_string ( index,  string [, code ref] )
 
-Set one one several ranges specifed with a string. Ranges are separated by "-".
+Set one one several ranges specified with a string. Ranges are separated by "-".
 Several ranges can be specified with commas.
 
 Example:
