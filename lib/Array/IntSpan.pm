@@ -740,26 +740,26 @@ Returns an array containing the Nth range element:
 
 =head2 consolidate( [ bottom, top , [ set_cb ]] )
 
-This function scan the range from the range index C<bottom> to C<top>
+This function scans the range from the range index C<bottom> to C<top>
 and compare the values held by the adjacent ranges. If the values are
 identical, the adjacent ranges are merged.
 
-The comparision is made with the C<==> operator. Objects stored in the
-range B<must> overload the C<==> operator. If not, the comparison will
-be made with the standard stringification of an object and the merge
-will never happen.
+The comparison is made with the C<==> operator. Objects stored in the
+range B<must> overload the C<==> operator. If not, the comparison is
+made with the standard stringification of an object and the merge
+never happens.
 
-If provided, the C<set_cb> will be invoked on the contained object
+If provided, the C<set_cb> is invoked on the contained object
 after 2 ranges are merged.
 
-For instance, if the C<"$obj_a" eq "$obj_b">:
+For instance, if C<"$obj_a" eq "$obj_b">:
 
- original range         : [1-4,obj_a],[5-9,obj_b]
- consolidate(0,1,\&set) : [1-9,obj_a]
+ original range is            : [1-4,obj_a],[5-9,obj_b]
+ consolidate(0,1,\&set) yields: [1-9,obj_a]
 
-And consolidate will perform this call:
+And C<consolidate> performs this call:
 
- &$set(1,9,obj_a) ;
+ $set->(1,9,obj_a) ;
 
 Consolidate the whole range when called without parameters.
 
