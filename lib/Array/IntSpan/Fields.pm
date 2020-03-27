@@ -13,17 +13,10 @@
 # contact Dominique Dumont ddumont@cpan.org
 ##########################################################################
 
-# $Author$
-# $Date$
-# $Name$
-# $Revision$
-
 use strict;
-use warnings; 
+use warnings;
 
 package Array::IntSpan::Fields;
-
-our $VERSION = '2.002';
 
 use Array::IntSpan;
 use Carp ;
