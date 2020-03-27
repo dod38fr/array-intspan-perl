@@ -8,9 +8,8 @@
 ##########################################################################
 # Copyright 2000 Toby Everett.  All rights reserved.
 #
-# This file is distributed under the Artistic License. See
-# http://www.ActiveState.com/corporate/artistic_license.htm or
-# the license that comes with your perl distribution.
+# This module is distributed under the Artistic 2.0 License. See
+# https://www.perlfoundation.org/artistic-license-20.html
 #
 # For comments, questions, bugs or general interest, feel free to
 # contact Toby Everett at teverett@alascom.att.com

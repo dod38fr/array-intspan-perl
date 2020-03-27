@@ -6,9 +6,8 @@
 ##########################################################################
 # Copyright 2003 Dominique Dumont.  All rights reserved.
 #
-# This file is distributed under the Artistic License. See
-# http://www.ActiveState.com/corporate/artistic_license.htm or
-# the license that comes with your perl distribution.
+# This module is distributed under the Artistic 2.0 License. See
+# https://www.perlfoundation.org/artistic-license-20.html
 #
 # For comments, questions, bugs or general interest, feel free to
 # contact Dominique Dumont ddumont@cpan.org
@@ -279,8 +278,9 @@ are too great with respect to the filed description.
 Dominique Dumont, ddumont@cpan.org
 
 Copyright (c) 2003 Dominique Dumont. All rights reserved.
-This program is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself.
+
+This module is distributed under the Artistic 2.0 License. See
+https://www.perlfoundation.org/artistic-license-20.html
 
 =cut
 

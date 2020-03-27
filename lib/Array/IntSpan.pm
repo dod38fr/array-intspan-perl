@@ -8,13 +8,11 @@
 # Copyright 2003-2004,2010,2014 Dominique Dumont.  All rights reserved.
 # Copyright 2000 Toby Everett.  All rights reserved.
 #
-# This file is distributed under the Artistic License. See
-# http://www.ActiveState.com/corporate/artistic_license.htm or
-# the license that comes with your perl distribution.
+# This file is distributed under the Artistic 2.0 License. See
+# https://www.perlfoundation.org/artistic-license-20.html
 #
 # For comments, questions, bugs or general interest, feel free to
 # contact Dominique Dumont at ddumont@cpan.org
-# or Toby Everett at teverett@alascom.att.com
 ##########################################################################
 
 use strict;
@@ -788,12 +786,11 @@ Dominique Dumont, ddumont@cpan.org
 =back
 
 Copyright (c) 2000 Toby Everett.
-Copyright (c) 2003-2004,2014 Dominique Dumont.
+Copyright (c) 2003-2004,2014,2020 Dominique Dumont.
 All rights reserved.  This program is free software.
 
-This module is distributed under the Artistic License. See
-http://www.ActiveState.com/corporate/artistic_license.htm or the
-license that comes with your perl distribution.
+This module is distributed under the Artistic 2.0 License. See
+https://www.perlfoundation.org/artistic-license-20.html
 
 =cut
 
