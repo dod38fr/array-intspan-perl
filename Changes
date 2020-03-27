@@ -1,3 +1,16 @@
+{{$NEXT}}
+
+2.004 2020-03-27
+
+  Main change: This module is now distributed under Artistic
+  2.0 license (instead of Artistic 1.0)
+
+  Other changes are
+    * add contributors section
+    * clarify and fix typos in documentation
+    * Added minimum perl version as suggested by CPANTS.
+      (Thanks Mohammad S Anwar)
+
 2014-12-24 v2.003
 
     * Added set, set_range_as_string and get_range_list methods
