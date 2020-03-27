@@ -763,7 +763,17 @@ And C<consolidate> performs this call:
 
 Consolidate the whole range when called without parameters.
 
-=head1 AUTHOR
+=head1 CONTRIBUTORS
+
+=over
+
+=item *
+
+Mohammad S Anwar <mohammad.anwar@yahoo.com>
+
+=back
+
+=head1 AUTHORS
 
 =over
 
