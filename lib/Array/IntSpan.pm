@@ -614,7 +614,7 @@ twice:
  $callback->(0, 4,$foo_obj)
  $callback->(8,10,$foo_obj)
 
-It will be the callback responsability to make sure that the range
+It will be the callback responsibility to make sure that the range
 C<0-4> and C<7-10> holds 2 I<different> objects.
 
 =head2 set( index,  value [, code ref] )

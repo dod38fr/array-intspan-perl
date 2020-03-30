@@ -143,7 +143,7 @@ strings separately and there is no other information available to
 distinguish between the two in this situation.  I do not expect that
 this will be a problem in most situations. Most users will probably
 use dotted decimal or network string notations, and even if they do
-use the integer notation the likelyhood that they will be using the
+use the integer notation the likelihood that they will be using the
 addresses C<'0.0.3.232'> through C<'0.0.39.15'> as indices is
 relatively low.
 
